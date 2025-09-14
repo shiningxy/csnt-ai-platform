@@ -62,7 +62,8 @@ export type Database = {
           interaction_method: string
           name: string
           output_schema: string | null
-          owner_id: string
+          owner_id: string | null
+          owner_name: string | null
           popularity: number
           pseudo_code: string | null
           rating: number | null
@@ -86,7 +87,8 @@ export type Database = {
           interaction_method?: string
           name: string
           output_schema?: string | null
-          owner_id: string
+          owner_id?: string | null
+          owner_name?: string | null
           popularity?: number
           pseudo_code?: string | null
           rating?: number | null
@@ -110,7 +112,8 @@ export type Database = {
           interaction_method?: string
           name?: string
           output_schema?: string | null
-          owner_id?: string
+          owner_id?: string | null
+          owner_name?: string | null
           popularity?: number
           pseudo_code?: string | null
           rating?: number | null

@@ -22,9 +22,9 @@ interface DatabaseAlgorithm {
   api_example: string | null;
   created_at: string;
   updated_at: string;
+  owner_name: string | null;
   categories: { name: string } | null;
   sub_categories: { name: string } | null;
-  profiles: { name: string } | null;
   algorithm_tags: { tags: { name: string } }[];
   approval_records: {
     id: string;
@@ -32,7 +32,6 @@ interface DatabaseAlgorithm {
     comment: string | null;
     meeting_notes: string | null;
     created_at: string;
-    profiles: { name: string } | null;
   }[];
 }
 
@@ -50,7 +49,6 @@ export const useAlgorithms = () => {
           *,
           categories(name),
           sub_categories(name),
-          profiles(name),
           algorithm_tags(
             tags(name)
           ),
@@ -59,8 +57,7 @@ export const useAlgorithms = () => {
             result,
             comment,
             meeting_notes,
-            created_at,
-            profiles(name)
+            created_at
           )
         `)
         .order('created_at', { ascending: false });
@@ -75,7 +72,7 @@ export const useAlgorithms = () => {
         tags: algo.algorithm_tags?.map(at => at.tags.name) || [],
         description: algo.description || '',
         status: algo.status as any,
-        owner: algo.profiles?.name || '',
+        owner: algo.owner_name || '',
         createdAt: algo.created_at,
         updatedAt: algo.updated_at,
         applicableScenarios: algo.applicable_scenarios || '',
@@ -90,7 +87,7 @@ export const useAlgorithms = () => {
         apiExample: algo.api_example || '',
         approvalRecords: algo.approval_records?.map(ar => ({
           id: ar.id,
-          approver: ar.profiles?.name || '',
+          approver: '李四', // Mock approver for now
           time: ar.created_at,
           result: ar.result as any,
           comment: ar.comment || '',

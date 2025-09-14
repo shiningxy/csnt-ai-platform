@@ -159,9 +159,20 @@ export default function AlgorithmList() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden h-[520px] md:h-[680px]">
+        {/* Silk Background */}
+        <div className="absolute inset-0 z-0">
+          <Silk
+            speed={6}
+            scale={1}
+            color="#409eff"
+            noiseIntensity={1.5}
+            rotation={0}
+          />
+        </div>
+        
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20 z-10" />
         

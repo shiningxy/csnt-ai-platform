@@ -14,10 +14,10 @@ const Index = () => {
         {/* Silk Background */}
         <div className="absolute inset-0 z-0">
           <Silk
-            speed={5}
-            scale={2}
-            color="hsl(var(--primary) / 0.1)"
-            noiseIntensity={0.8}
+            speed={8}
+            scale={1.5}
+            color="#409eff"
+            noiseIntensity={1.5}
             rotation={0.2}
           />
         </div>

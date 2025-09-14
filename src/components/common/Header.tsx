@@ -16,13 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Brain, Bell, Settings, LogOut, User, FileText, Shield, X } from 'lucide-react';
+import { Bell, User, FileText, Shield, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { NotificationManager } from '@/components/notifications/notification-manager';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useHeaderTheme } from '@/hooks/use-header-theme';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/components/auth/auth-provider';
 
 // Navigation items configuration
 const navigationItems = [
@@ -36,7 +36,16 @@ export function Header() {
   const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
-  const { user: currentUser } = useUser();
+  const { profile, signOut } = useAuth();
+  
+  // 使用profile作为当前用户信息
+  const currentUser = profile ? {
+    id: profile.id,
+    name: profile.name,
+    role: profile.role,
+    email: profile.email,
+    avatar: profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`
+  } : null;
   
   // Get dynamic header theme styles
   const { 
@@ -49,25 +58,12 @@ export function Header() {
     activeButtonClass 
   } = useHeaderTheme();
 
-  // Filter navigation items based on user role
-  const visibleItems = navigationItems.filter(item => 
+  // 过滤导航项目基于用户角色
+  const visibleNavItems = currentUser ? navigationItems.filter(item => 
     item.roles.includes('all') || item.roles.includes(currentUser.role)
-  );
+  ) : navigationItems.filter(item => item.roles.includes('all'));
 
-  // 通知管理函数
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
-  };
-
-  const handleMarkAsRead = (id: number) => {
-    markAsRead(id);
-  };
-
-  const handleDeleteNotification = (id: number) => {
-    deleteNotification(id);
-  };
-
-  const handleUserMenuClick = (action: string) => {
+  const handleUserMenuClick = async (action: string) => {
     console.log('点击菜单项:', action); // 添加调试信息
     switch (action) {
       case 'profile':
@@ -83,84 +79,102 @@ export function Header() {
         navigate('/admin?tab=settings');
         break;
       case 'logout':
-        // 这里应该实现登出逻辑
-        console.log('用户登出');
+        await signOut();
+        navigate('/auth');
         break;
       default:
+        console.log('未知操作:', action);
+    }
+  };
+
+  const handleNotificationAction = (action: string, notificationId?: string) => {
+    switch (action) {
+      case 'markAllRead':
+        markAllAsRead();
+        break;
+      case 'markRead':
+        if (notificationId) markAsRead(notificationId);
+        break;
+      case 'delete':
+        if (notificationId) deleteNotification(notificationId);
         break;
     }
   };
 
   return (
     <header className={headerClass}>
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo and Platform Name */}
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                <Brain className={cn("h-5 w-5", iconClass)} />
-              </div>
-               <div className="hidden sm:block">
-                 <h1 className={cn("text-lg font-semibold", logoTextClass)}>AI赋能平台</h1>
-                 <p className={cn("text-xs", subtitleClass)}>算法资产管理中心</p>
-               </div>
-            </Link>
-          </div>
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo and Navigation */}
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">算</span>
+            </div>
+            <div className="flex flex-col">
+              <span className={cn("font-semibold text-lg leading-none", logoTextClass)}>
+                算法管理平台
+              </span>
+              <span className={cn("text-xs leading-none mt-0.5", subtitleClass)}>
+                Algorithm Management
+              </span>
+            </div>
+          </Link>
 
-          {/* Navigation */}
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1">
-            {visibleItems.map((item) => (
-               <Link key={item.href} to={item.href}>
-                 <Button
-                   variant="ghost"
-                   className={cn(
-                     "relative transition-colors",
-                     buttonClass,
-                     location.pathname === item.href && activeButtonClass
-                   )}
-                 >
-                  {item.label}
-                  {item.href === '/approval' && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-danger"></span>
+            {visibleNavItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    isActive ? activeButtonClass : buttonClass
                   )}
-                </Button>
-              </Link>
-            ))}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
+        </div>
 
-          {/* User Actions */}
-          <div className="flex items-center space-x-2">
-            {/* Theme Toggle */}
-            <ThemeToggle />
+        {/* Right side actions */}
+        <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
-            {/* Notifications */}
+          {/* Notifications - 只在用户登录时显示 */}
+          {currentUser && (
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
-               <PopoverTrigger asChild>
-                 <Button variant="ghost" size="icon" className={cn("relative transition-colors", buttonClass)}>
-                  <Bell className="h-4 w-4" />
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className={cn("relative transition-colors", buttonClass)}>
+                  <Bell className={cn("h-4 w-4", iconClass)} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-xs text-white">
-                      {unreadCount}
-                    </span>
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0" align="end" sideOffset={10}>
+              <PopoverContent className="w-80 p-0 z-50" align="end">
                 <NotificationManager
                   notifications={notifications}
-                  onMarkAllAsRead={handleMarkAllAsRead}
-                  onMarkAsRead={handleMarkAsRead}
-                  onDelete={handleDeleteNotification}
+                  onMarkAllAsRead={() => handleNotificationAction('markAllRead')}
+                  onMarkAsRead={(id) => handleNotificationAction('markRead', id)}
+                  onDelete={(id) => handleNotificationAction('delete', id)}
                   onClose={() => setNotificationOpen(false)}
                 />
               </PopoverContent>
             </Popover>
+          )}
 
-            {/* User Menu */}
+          {/* User Menu - 只在用户登录时显示 */}
+          {currentUser && (
             <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className={cn("relative h-9 w-9 rounded-full transition-colors", buttonClass)}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className={cn("relative h-9 w-9 rounded-full transition-colors", buttonClass)}>
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                     <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
@@ -215,19 +229,33 @@ export function Header() {
                   }}
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  设置
+                  系统设置
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  className="text-danger focus:text-danger"
-                  onClick={() => handleUserMenuClick('logout')}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserMenuClick('logout');
+                  }}
+                  className="text-red-600 focus:text-red-600"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   退出登录
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          )}
+
+          {/* Login button for non-authenticated users */}
+          {!currentUser && (
+            <Button 
+              onClick={() => navigate('/auth')}
+              className={cn("transition-colors", buttonClass)}
+            >
+              登录
+            </Button>
+          )}
         </div>
       </div>
     </header>

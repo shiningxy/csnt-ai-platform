@@ -12,7 +12,7 @@ export const useHeaderTheme = () => {
       // 检测背景是否为深色
       // 在页面顶部时，通常背景是深色的（如hero section）
       // 滚动一定距离后，背景可能变成浅色
-      const threshold = 100; // 滚动阈值
+      const threshold = 50; // 滚动阈值
       
       // 可以根据具体页面调整逻辑
       const isDark = currentScrollY < threshold;

@@ -69,7 +69,7 @@ export default function AdminPanel() {
 
   // 编辑草稿
   const handleEditDraft = (draftId: string) => {
-    navigate(`/apply?draft=${draftId}`);
+    navigate(`/apply?draftId=${draftId}`);
   };
 
   return (

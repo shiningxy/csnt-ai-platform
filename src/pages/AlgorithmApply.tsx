@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { CodeBlock } from '@/components/ui/code-block';
 import { ArrowLeft, ArrowRight, Save, Send, Upload, FileText, Code, Settings, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { DraftStorage, ApplicationStorage } from '@/lib/storage';
 
@@ -79,22 +79,51 @@ export default function AlgorithmApply() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [generatedExample, setGeneratedExample] = useState('');
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   const form = useForm<AlgorithmApplyFormData>({
     resolver: zodResolver(algorithmApplySchema),
     defaultValues: {
+      name: '',
+      category: '',
+      subCategory: '',
       tags: [],
+      description: '',
       preprocessing: [],
       featureEngineering: [],
+      modelStructure: '',
       postProcessing: [],
       exceptionHandling: [],
+      interactionMethod: '',
       deploymentMethod: [],
       dependencies: [],
+      resourceRequirements: '',
+      inputDataSource: '',
+      inputDataType: '',
+      outputSchema: '',
+      applicableScenarios: '',
       targetUsers: [],
     },
   });
+
+  // 加载草稿数据
+  useEffect(() => {
+    const draftId = searchParams.get('draftId');
+    if (draftId) {
+      const draft = DraftStorage.getDraft(draftId);
+      if (draft) {
+        setCurrentDraftId(draftId);
+        setSelectedCategory(draft.category);
+        form.reset(draft);
+        if (draft.interactionMethod) {
+          generateExample();
+        }
+      }
+    }
+  }, [searchParams, form]);
 
   const steps = [
     { id: 0, title: '基础信息', icon: FileText, description: '算法名称、分类和描述' },
@@ -180,7 +209,7 @@ window.algorithmConfig = {
     setGeneratedExample(example);
   };
 
-  const onSubmit = (data: AlgorithmApplyFormData) => {
+  const onSubmit = async (data: AlgorithmApplyFormData) => {
     console.log('提交数据:', data);
     
     try {
@@ -204,14 +233,23 @@ window.algorithmConfig = {
         modelStructure: data.modelStructure,
         postProcessing: data.postProcessing,
         exceptionHandling: data.exceptionHandling,
+        dependencies: data.dependencies,
       });
+      
+      // 如果是从草稿提交的，删除草稿
+      if (currentDraftId) {
+        DraftStorage.deleteDraft(currentDraftId);
+      }
       
       toast({
         title: "申请已提交",
         description: "您的算法申请已成功提交，我们会在5个工作日内完成评审。",
       });
+      
+      // 导航到审批中心
       navigate('/approval');
     } catch (error) {
+      console.error('提交申请失败:', error);
       toast({
         title: "提交失败",
         description: "提交申请时出现错误，请重试。",
@@ -223,7 +261,19 @@ window.algorithmConfig = {
   const saveDraft = () => {
     try {
       const currentData = form.getValues();
-      const draftId = DraftStorage.saveDraft(currentData);
+      
+      let draftId: string;
+      if (currentDraftId) {
+        // 更新现有草稿
+        DraftStorage.updateDraft(currentDraftId, currentData);
+        draftId = currentDraftId;
+      } else {
+        // 创建新草稿
+        draftId = DraftStorage.saveDraft(currentData);
+        setCurrentDraftId(draftId);
+        // 更新URL参数
+        navigate(`/apply?draftId=${draftId}`, { replace: true });
+      }
       
       toast({
         title: "草稿已保存",

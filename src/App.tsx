@@ -27,6 +27,7 @@ const App = () => (
             <Route path="/approval" element={<ApprovalCenter />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/apply" element={<AlgorithmApply />} />
+            <Route path="/algorithm/apply" element={<AlgorithmApply />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

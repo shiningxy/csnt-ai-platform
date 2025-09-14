@@ -14,6 +14,7 @@ import {
 import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
 import { mockAlgorithms } from '@/data/mockData';
+import { DraftStorage } from '@/lib/storage';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -33,7 +34,35 @@ export default function AlgorithmList() {
 
   // Filter and sort algorithms
   const filteredAlgorithms = useMemo(() => {
-    let filtered = [...mockAlgorithms];
+    // 合并草稿数据和已发布的算法
+    const drafts = DraftStorage.getAllDrafts().map(draft => ({
+      id: draft.id,
+      name: draft.name,
+      category: draft.category,
+      subCategory: draft.subCategory,
+      tags: draft.tags,
+      description: draft.description,
+      status: 'draft' as const,
+      owner: '当前用户',
+      createdAt: draft.createdAt,
+      updatedAt: draft.updatedAt,
+      applicableScenarios: draft.applicableScenarios,
+      targetUsers: draft.targetUsers,
+      interactionMethod: (draft.interactionMethod || 'api') as 'api' | 'batch' | 'component',
+      inputDataSource: draft.inputDataSource,
+      inputDataType: (draft.inputDataType || 'json') as 'json' | 'csv' | 'image' | 'stream',
+      outputSchema: draft.outputSchema,
+      resourceRequirements: draft.resourceRequirements,
+      deploymentProcess: draft.deploymentMethod?.join(', ') || '',
+      pseudoCode: '',
+      apiExample: '',
+      approvalRecords: [],
+      callCount: 0,
+      rating: 0,
+      popularity: 0,
+    }));
+    
+    let filtered = [...mockAlgorithms, ...drafts];
 
     // Search filter
     if (filters.search) {
@@ -142,7 +171,7 @@ export default function AlgorithmList() {
 
             {/* CTA Button */}
             {(currentUserRole === 'algorithm_engineer' || currentUserRole === 'admin') && (
-              <Link to="/algorithm/apply">
+              <Link to="/apply">
                 <Button 
                   size="lg" 
                   className="bg-white text-primary hover:bg-white/90 shadow-lg"

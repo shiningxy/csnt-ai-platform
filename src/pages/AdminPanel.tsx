@@ -18,14 +18,7 @@ import { format } from "date-fns";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { PasswordChangeDialog } from "@/components/security/password-change-dialog";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data
-const initialNotifications = [
-  { id: 1, type: "system", title: "系统维护通知", message: "系统将于今晚22:00-24:00进行维护", time: "10分钟前", read: false },
-  { id: 2, type: "algorithm", title: "新算法待审核", message: "用户张三提交了新的排序算法", time: "1小时前", read: false },
-  { id: 3, type: "user", title: "用户注册", message: "新用户李四已注册", time: "2小时前", read: true },
-  { id: 4, type: "security", title: "安全警告", message: "检测到异常登录行为", time: "3小时前", read: false },
-];
+import { useNotifications } from "@/hooks/use-notifications";
 
 const users = [
   { id: 1, name: "张三", email: "zhangsan@example.com", role: "管理员", status: "活跃", lastLogin: "2024-01-15 14:30" },
@@ -47,7 +40,7 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
   const [drafts, setDrafts] = useState(() => DraftStorage.getAllDrafts());
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
   const [currentUser, setCurrentUser] = useState({
     name: "系统管理员",
     email: "admin@example.com",
@@ -100,7 +93,7 @@ export default function AdminPanel() {
 
   // 通知管理函数
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllAsRead();
     toast({
       title: "操作成功",
       description: "所有通知已标记为已读",
@@ -108,20 +101,16 @@ export default function AdminPanel() {
   };
 
   const handleMarkAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+    markAsRead(id);
   };
 
   const handleDeleteNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    deleteNotification(id);
     toast({
       title: "删除成功",
       description: "通知已删除",
     });
   };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="min-h-screen bg-background">

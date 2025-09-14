@@ -19,7 +19,8 @@ import {
 import { Brain, Bell, Settings, LogOut, User, FileText, Shield, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { NotificationManager, type Notification } from '@/components/notifications/notification-manager';
+import { NotificationManager } from '@/components/notifications/notification-manager';
+import { useNotifications } from '@/hooks/use-notifications';
 
 // Mock current user - in real app this would come from auth context
 const currentUser = {
@@ -36,40 +37,28 @@ const navigationItems = [
   { label: '管理面板', href: '/admin', roles: ['admin'] },
 ];
 
-// Mock notifications data
-const initialNotifications: Notification[] = [
-  { id: 1, type: 'system', title: '系统维护通知', message: '系统将于今晚22:00-24:00进行维护', time: '10分钟前', read: false },
-  { id: 2, type: 'algorithm', title: '新算法待审核', message: '用户张三提交了新的排序算法', time: '1小时前', read: false },
-  { id: 3, type: 'user', title: '用户注册', message: '新用户李四已注册', time: '2小时前', read: true },
-  { id: 4, type: 'security', title: '安全警告', message: '检测到异常登录行为', time: '3小时前', read: false },
-];
-
 export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
 
   // Filter navigation items based on user role
   const visibleItems = navigationItems.filter(item => 
     item.roles.includes('all') || item.roles.includes(currentUser.role)
   );
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   // 通知管理函数
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllAsRead();
   };
 
   const handleMarkAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+    markAsRead(id);
   };
 
   const handleDeleteNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    deleteNotification(id);
   };
 
   const handleUserMenuClick = (action: string) => {

@@ -15,6 +15,7 @@ import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
 import { mockAlgorithms } from '@/data/mockData';
 import { DraftStorage, ApplicationStorage } from '@/lib/storage';
+import Silk from '@/components/effects/Silk';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -160,10 +161,23 @@ export default function AlgorithmList() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-hero">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="relative container mx-auto px-4 py-16">
-          <div className="text-center text-white">
+      <div className="relative overflow-hidden h-96 md:h-[500px]">
+        {/* Silk Background */}
+        <div className="absolute inset-0 z-0">
+          <Silk
+            speed={2}
+            scale={1.5}
+            color="hsl(var(--primary) / 0.2)"
+            noiseIntensity={1}
+            rotation={0.1}
+          />
+        </div>
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20 z-10" />
+        
+        <div className="relative container mx-auto px-4 py-16 z-20 h-full flex items-center">
+          <div className="text-center text-white w-full">
             <div className="flex justify-center mb-6">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
                 <Brain className="h-8 w-8" />

@@ -127,7 +127,7 @@ export const useHeaderTheme = () => {
   const getHeaderStyles = () => {
     if (isDarkBackground) {
       return {
-        headerClass: "fixed top-0 left-0 right-0 z-50 w-full bg-background/10 backdrop-blur-xl border-b border-border/5 transition-all duration-300",
+        headerClass: "fixed top-0 left-0 right-0 z-50 w-full bg-black/10 backdrop-blur-xl border-b border-border/5 transition-all duration-300",
         textClass: "text-foreground-light",
         logoTextClass: "text-foreground-light",
         subtitleClass: "text-foreground-light/70",
@@ -137,7 +137,7 @@ export const useHeaderTheme = () => {
       };
     } else {
       return {
-        headerClass: "fixed top-0 left-0 right-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border/20 transition-all duration-300",
+        headerClass: "fixed top-0 left-0 right-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-border/20 transition-all duration-300",
         textClass: "text-foreground",
         logoTextClass: "text-foreground",
         subtitleClass: "text-muted-foreground",

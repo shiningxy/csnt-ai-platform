@@ -19,6 +19,7 @@ import { PasswordChangeDialog } from "@/components/security/password-change-dial
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useDrafts } from "@/hooks/useDrafts";
+import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/integrations/supabase/client";
 
 const users = [
@@ -65,13 +66,7 @@ export default function AdminPanel() {
   
   const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications(currentUserId);
   const { drafts, deleteDraft } = useDrafts(currentUserId);
-  const [currentUser, setCurrentUser] = useState({
-    name: "系统管理员",
-    email: "admin@example.com",
-    phone: "+86 138****8888",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
-    role: "超级管理员"
-  });
+  const { user: currentUser, updateUser } = useUser();
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -134,10 +129,10 @@ export default function AdminPanel() {
     navigate(`/apply?draftId=${draftId}`);
   };
 
-  // 处理头像更换
+  // 处理头像更换 - 已经在AvatarUpload组件中处理了全局状态同步
   const handleAvatarChange = (newAvatar: string) => {
-    setCurrentUser(prev => ({ ...prev, avatar: newAvatar }));
-    // 这里可以调用API保存到服务器
+    // AvatarUpload组件已经调用了updateAvatar来同步全局状态
+    // 这里不需要额外操作，因为currentUser已经是全局状态的引用
   };
 
   // 处理个人信息保存
@@ -431,15 +426,11 @@ export default function AdminPanel() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">用户名</Label>
-                    <Input id="username" value={currentUser.name} onChange={(e) => setCurrentUser(prev => ({ ...prev, name: e.target.value }))} />
+                    <Input id="username" value={currentUser.name} onChange={(e) => updateUser({ name: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">邮箱</Label>
-                    <Input id="email" value={currentUser.email} onChange={(e) => setCurrentUser(prev => ({ ...prev, email: e.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">手机号</Label>
-                    <Input id="phone" value={currentUser.phone} onChange={(e) => setCurrentUser(prev => ({ ...prev, phone: e.target.value }))} />
+                    <Input id="email" value={currentUser.email} onChange={(e) => updateUser({ email: e.target.value })} />
                   </div>
                   <Button onClick={handleProfileSave}>保存更改</Button>
                 </CardContent>

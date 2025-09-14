@@ -14,7 +14,8 @@ import {
   Eye, 
   Star,
   TrendingUp,
-  Phone
+  Phone,
+  Play
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,28 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('zh-CN');
   };
+
+  // Determine which buttons should be available based on status
+  const getButtonAvailability = (status: string) => {
+    switch (status) {
+      case 'draft':
+      case 'pending_review':
+      case 'under_review':
+      case 'pending_confirmation':
+        return { showDemo: false, showCopy: false, showDetails: false };
+      case 'pending_product':
+      case 'deprecated':
+        return { showDemo: false, showCopy: false, showDetails: true };
+      case 'pending_frontend':
+        return { showDemo: false, showCopy: true, showDetails: true };
+      case 'live':
+        return { showDemo: true, showCopy: true, showDetails: true };
+      default:
+        return { showDemo: false, showCopy: false, showDetails: false };
+    }
+  };
+
+  const buttonAvailability = getButtonAvailability(algorithm.status);
 
   return (
     <Card 
@@ -122,7 +145,24 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
 
       <CardFooter className="pt-0">
         <div className="flex w-full space-x-2">
-          {algorithm.status === 'live' && algorithm.apiExample && (
+          {buttonAvailability.showDemo && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 transition-all duration-300 hover:scale-105"
+              onClick={() => {
+                toast({
+                  title: "展示效果",
+                  description: "算法展示功能开发中...",
+                });
+              }}
+            >
+              <Play className="h-3 w-3 mr-1" />
+              查看展示效果
+            </Button>
+          )}
+          
+          {buttonAvailability.showCopy && algorithm.apiExample && (
             <Button
               variant="outline"
               size="sm"
@@ -130,19 +170,28 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
               onClick={handleCopyCall}
             >
               <Copy className="h-3 w-3 mr-1" />
-              复制调用
+              复制调用代码
             </Button>
           )}
-          <Link to={`/algorithm/${algorithm.id}`} className="flex-1">
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="w-full transition-all duration-300 hover:scale-105"
-            >
-              <Eye className="h-3 w-3 mr-1" />
-              查看详情
-            </Button>
-          </Link>
+          
+          {buttonAvailability.showDetails && (
+            <Link to={`/algorithm/${algorithm.id}`} className="flex-1">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="w-full transition-all duration-300 hover:scale-105"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                查看算法详情
+              </Button>
+            </Link>
+          )}
+          
+          {!buttonAvailability.showDemo && !buttonAvailability.showCopy && !buttonAvailability.showDetails && (
+            <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground py-2">
+              该状态下暂无可用操作
+            </div>
+          )}
         </div>
       </CardFooter>
 

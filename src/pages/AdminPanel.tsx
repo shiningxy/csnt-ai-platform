@@ -88,11 +88,23 @@ export default function AdminPanel() {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
     console.log('URL tab参数:', tab); // 添加调试信息
+    
     if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'api-keys', 'settings'].includes(tab)) {
+      // 检查权限：如果不是admin用户试图访问受限标签，则重定向到profile
+      if (!currentUser || currentUser.role !== 'admin') {
+        if (tab === 'permissions' || tab === 'api-keys') {
+          setActiveTab('profile');
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', 'profile');
+          window.history.replaceState({}, '', url.toString());
+          return;
+        }
+      }
+      
       setActiveTab(tab);
       console.log('设置activeTab为:', tab); // 添加调试信息
     }
-  }, [location.search]);
+  }, [location.search, currentUser]);
 
   // Load API keys
   useEffect(() => {
@@ -310,13 +322,24 @@ export default function AdminPanel() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => {
+          // 检查权限：如果不是admin用户试图访问受限标签，则重定向到profile
+          if (!currentUser || currentUser.role !== 'admin') {
+            if (value === 'permissions' || value === 'api-keys') {
+              setActiveTab('profile');
+              const url = new URL(window.location.href);
+              url.searchParams.set('tab', 'profile');
+              window.history.pushState({}, '', url.toString());
+              return;
+            }
+          }
+          
           setActiveTab(value);
           // 更新URL参数
           const url = new URL(window.location.href);
           url.searchParams.set('tab', value);
           window.history.pushState({}, '', url.toString());
         }} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className={`grid w-full ${currentUser?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-4'}`}>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               消息通知
@@ -329,14 +352,18 @@ export default function AdminPanel() {
               <FileText className="h-4 w-4" />
               我的草稿
             </TabsTrigger>
-            <TabsTrigger value="permissions" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              权限管理
-            </TabsTrigger>
-            <TabsTrigger value="api-keys" className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              API密钥管理
-            </TabsTrigger>
+            {currentUser?.role === 'admin' && (
+              <TabsTrigger value="permissions" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                权限管理
+              </TabsTrigger>
+            )}
+            {currentUser?.role === 'admin' && (
+              <TabsTrigger value="api-keys" className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                API密钥管理
+              </TabsTrigger>
+            )}
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               系统设置
@@ -568,7 +595,8 @@ export default function AdminPanel() {
           </TabsContent>
 
           {/* 权限管理 */}
-          <TabsContent value="permissions" className="space-y-6">
+          {currentUser?.role === 'admin' && (
+            <TabsContent value="permissions" className="space-y-6">
             <Tabs defaultValue="users" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="users">用户管理</TabsTrigger>
@@ -732,9 +760,11 @@ export default function AdminPanel() {
               </TabsContent>
             </Tabs>
           </TabsContent>
+          )}
 
           {/* API密钥管理 */}
-          <TabsContent value="api-keys" className="space-y-6">
+          {currentUser?.role === 'admin' && (
+            <TabsContent value="api-keys" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">API密钥管理</h2>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -926,6 +956,7 @@ export default function AdminPanel() {
               </Card>
             </div>
           </TabsContent>
+          )}
 
           {/* 系统设置 */}
           <TabsContent value="settings" className="space-y-6">

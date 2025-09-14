@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { NotificationManager } from '@/components/notifications/notification-manager';
 import { useNotifications } from '@/hooks/use-notifications';
+import { useHeaderTheme } from '@/hooks/use-header-theme';
 
 // Mock current user - in real app this would come from auth context
 const currentUser = {
@@ -42,6 +43,17 @@ export function Header() {
   const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
+  
+  // Get dynamic header theme styles
+  const { 
+    headerClass, 
+    textClass, 
+    logoTextClass, 
+    subtitleClass, 
+    iconClass, 
+    buttonClass, 
+    activeButtonClass 
+  } = useHeaderTheme();
 
   // Filter navigation items based on user role
   const visibleItems = navigationItems.filter(item => 
@@ -86,18 +98,18 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/10 backdrop-blur-xl text-white">
+    <header className={headerClass}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Platform Name */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                <Brain className="h-5 w-5 text-white" />
+                <Brain className={cn("h-5 w-5", iconClass)} />
               </div>
                <div className="hidden sm:block">
-                 <h1 className="text-lg font-semibold text-white">AI赋能平台</h1>
-                 <p className="text-xs text-white/70">算法资产管理中心</p>
+                 <h1 className={cn("text-lg font-semibold", logoTextClass)}>AI赋能平台</h1>
+                 <p className={cn("text-xs", subtitleClass)}>算法资产管理中心</p>
                </div>
             </Link>
           </div>
@@ -105,12 +117,13 @@ export function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {visibleItems.map((item) => (
-              <Link key={item.href} to={item.href}>
+               <Link key={item.href} to={item.href}>
                  <Button
                    variant="ghost"
                    className={cn(
-                     "relative text-white/90 hover:text-white hover:bg-white/10",
-                     location.pathname === item.href && "bg-white/20 text-white"
+                     "relative transition-colors",
+                     buttonClass,
+                     location.pathname === item.href && activeButtonClass
                    )}
                  >
                   {item.label}
@@ -130,7 +143,7 @@ export function Header() {
             {/* Notifications */}
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
                <PopoverTrigger asChild>
-                 <Button variant="ghost" size="icon" className="relative text-white/90 hover:text-white hover:bg-white/10">
+                 <Button variant="ghost" size="icon" className={cn("relative transition-colors", buttonClass)}>
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-xs text-white">
@@ -153,7 +166,7 @@ export function Header() {
             {/* User Menu */}
             <DropdownMenu>
                <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/10">
+                 <Button variant="ghost" className={cn("relative h-9 w-9 rounded-full transition-colors", buttonClass)}>
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                     <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>

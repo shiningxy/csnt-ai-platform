@@ -51,8 +51,8 @@ const getLuminance = (color: string): number => {
 
 // 判断是否应使用浅色文字（背景较暗时）
 const shouldUseLightText = (luminance: number): boolean => {
-  // 通常：背景亮度 < 0.3 → 用浅色文字；>= 0.3 → 用深色文字
-  return luminance < 0.3;
+  // 通常：背景亮度 < 0.8 → 用浅色文字；>= 0.8 → 用深色文字
+  return luminance < 0.8;
 };
 
 export const useHeaderTheme = () => {

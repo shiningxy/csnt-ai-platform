@@ -86,7 +86,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/5 backdrop-blur-md text-white">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Platform Name */}
@@ -95,10 +95,10 @@ export function Header() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
                 <Brain className="h-5 w-5 text-white" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-foreground">AI赋能平台</h1>
-                <p className="text-xs text-muted-foreground">算法资产管理中心</p>
-              </div>
+               <div className="hidden sm:block">
+                 <h1 className="text-lg font-semibold text-white">AI赋能平台</h1>
+                 <p className="text-xs text-white/70">算法资产管理中心</p>
+               </div>
             </Link>
           </div>
 
@@ -106,13 +106,13 @@ export function Header() {
           <nav className="hidden md:flex items-center space-x-1">
             {visibleItems.map((item) => (
               <Link key={item.href} to={item.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "relative",
-                    location.pathname === item.href && "bg-accent text-accent-foreground"
-                  )}
-                >
+                 <Button
+                   variant="ghost"
+                   className={cn(
+                     "relative text-white/90 hover:text-white hover:bg-white/10",
+                     location.pathname === item.href && "bg-white/20 text-white"
+                   )}
+                 >
                   {item.label}
                   {item.href === '/approval' && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-danger"></span>
@@ -129,8 +129,8 @@ export function Header() {
 
             {/* Notifications */}
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+               <PopoverTrigger asChild>
+                 <Button variant="ghost" size="icon" className="relative text-white/90 hover:text-white hover:bg-white/10">
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-xs text-white">
@@ -152,8 +152,8 @@ export function Header() {
 
             {/* User Menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/10">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                     <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>

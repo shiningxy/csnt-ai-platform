@@ -174,7 +174,7 @@ export default function AlgorithmList() {
         </div>
         
         {/* Gradient Overlay */}
-        <div className="absolute -top-20 left-0 right-0 bottom-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20 z-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20 z-10" />
         
         <div className="relative container mx-auto px-4 py-16 z-20 h-full flex items-center">
           <div className="text-center text-white w-full">

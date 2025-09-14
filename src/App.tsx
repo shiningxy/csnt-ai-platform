@@ -11,6 +11,7 @@ import ApprovalCenter from "./pages/ApprovalCenter";
 import AdminPanel from "./pages/AdminPanel";
 import AlgorithmApply from "./pages/AlgorithmApply";
 import NotFound from "./pages/NotFound";
+import Silk from "@/components/effects/Silk";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +22,19 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen relative">
+            {/* Global Silk Background */}
+            <div className="fixed inset-0 -z-10">
+              <Silk
+                speed={6}
+                scale={1}
+                color="#409eff"
+                noiseIntensity={1.5}
+                rotation={0}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20" />
+            </div>
+
             <Header />
             <Routes>
               <Route path="/" element={<AlgorithmList />} />

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { CodeExampleDialog } from '@/components/algorithm/CodeExampleDialog';
 import { useToast } from '@/hooks/use-toast';
 import { AlgorithmAsset } from '@/types/algorithm';
 import { 
@@ -26,28 +27,11 @@ interface AlgorithmCardProps {
 
 export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showCodeDialog, setShowCodeDialog] = useState(false);
   const { toast } = useToast();
 
-  const generateApiExample = () => {
-    return `// 示例：调用${algorithm.name}
-fetch('https://api.example.com/algorithms/${algorithm.id}/invoke', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer <YOUR_API_KEY>'
-  },
-  body: JSON.stringify({ input: {} })
-}).then(res => res.json()).then(console.log).catch(console.error);
-`;
-  };
-
   const handleCopyCall = async () => {
-    const code = (algorithm.apiExample?.trim()) || generateApiExample();
-    await navigator.clipboard.writeText(code);
-    toast({
-      title: "调用示例已复制",
-      description: "API调用代码已复制到剪贴板",
-    });
+    setShowCodeDialog(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -158,20 +142,16 @@ fetch('https://api.example.com/algorithms/${algorithm.id}/invoke', {
       <CardFooter className="pt-0">
         <div className="flex w-full space-x-2">
           {buttonAvailability.showDemo && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 transition-all duration-300 hover:scale-105"
-              onClick={() => {
-                toast({
-                  title: "展示效果",
-                  description: "算法展示功能开发中...",
-                });
-              }}
-            >
-              <Play className="h-3 w-3 mr-1" />
-              查看展示效果
-            </Button>
+            <Link to={`/algorithm/${algorithm.id}/demo`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 transition-all duration-300 hover:scale-105"
+              >
+                <Play className="h-3 w-3 mr-1" />
+                查看展示效果
+              </Button>
+            </Link>
           )}
           
           {buttonAvailability.showCopy && (
@@ -207,6 +187,12 @@ fetch('https://api.example.com/algorithms/${algorithm.id}/invoke', {
         </div>
       </CardFooter>
 
+      {/* Code Example Dialog */}
+      <CodeExampleDialog
+        open={showCodeDialog}
+        onOpenChange={setShowCodeDialog}
+        algorithm={algorithm}
+      />
     </Card>
   );
 }

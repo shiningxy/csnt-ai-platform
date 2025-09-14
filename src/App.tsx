@@ -7,6 +7,7 @@ import { Header } from "@/components/common/Header";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import AlgorithmList from "./pages/AlgorithmList";
 import AlgorithmDetail from "./pages/AlgorithmDetail";
+import AlgorithmDemo from "./pages/AlgorithmDemo";
 import ApprovalCenter from "./pages/ApprovalCenter";
 import AdminPanel from "./pages/AdminPanel";
 import AlgorithmApply from "./pages/AlgorithmApply";
@@ -27,6 +28,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<AlgorithmList />} />
               <Route path="/algorithm/:id" element={<AlgorithmDetail />} />
+              <Route path="/algorithm/:id/demo" element={<AlgorithmDemo />} />
               <Route path="/approval" element={<ApprovalCenter />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/apply" element={<AlgorithmApply />} />

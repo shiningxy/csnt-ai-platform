@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database } from "lucide-react";
+import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database, Copy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export default function AdminPanel() {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
     console.log('URL tab参数:', tab); // 添加调试信息
-    if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'settings'].includes(tab)) {
+    if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'api-keys', 'settings'].includes(tab)) {
       setActiveTab(tab);
       console.log('设置activeTab为:', tab); // 添加调试信息
     }
@@ -127,7 +127,7 @@ export default function AdminPanel() {
           url.searchParams.set('tab', value);
           window.history.pushState({}, '', url.toString());
         }} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               消息通知
@@ -143,6 +143,10 @@ export default function AdminPanel() {
             <TabsTrigger value="permissions" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               权限管理
+            </TabsTrigger>
+            <TabsTrigger value="api-keys" className="flex items-center gap-2">
+              <Key className="h-4 w-4" />
+              API密钥管理
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -534,6 +538,167 @@ export default function AdminPanel() {
                 </div>
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* API密钥管理 */}
+          <TabsContent value="api-keys" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">API密钥管理</h2>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    创建新密钥
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>创建API密钥</DialogTitle>
+                    <DialogDescription>
+                      为应用或用户创建新的API访问密钥
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>密钥名称</Label>
+                      <Input placeholder="例如：生产环境密钥" />
+                    </div>
+                    <div>
+                      <Label>权限范围</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择权限范围" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="read">只读权限</SelectItem>
+                          <SelectItem value="write">读写权限</SelectItem>
+                          <SelectItem value="admin">管理员权限</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>到期时间</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择到期时间" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="30d">30天</SelectItem>
+                          <SelectItem value="90d">90天</SelectItem>
+                          <SelectItem value="1y">1年</SelectItem>
+                          <SelectItem value="never">永不过期</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>备注</Label>
+                      <Textarea placeholder="密钥用途说明..." />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline">取消</Button>
+                      <Button>创建密钥</Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>API密钥列表</span>
+                    <Badge variant="secondary">3个有效密钥</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    { name: '生产环境密钥', key: 'pk_live_1234567890abcdef', status: '活跃', expires: '2025-06-15', lastUsed: '2小时前' },
+                    { name: '测试环境密钥', key: 'pk_test_abcdef1234567890', status: '活跃', expires: '2025-03-20', lastUsed: '1天前' },
+                    { name: '开发环境密钥', key: 'pk_dev_1234567890abcdef', status: '已停用', expires: '2025-12-31', lastUsed: '7天前' }
+                  ].map((apiKey, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{apiKey.name}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant={apiKey.status === '活跃' ? 'default' : 'secondary'}>
+                              {apiKey.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              到期：{apiKey.expires}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              最后使用：{apiKey.lastUsed}
+                            </span>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem>查看详情</DropdownMenuItem>
+                            <DropdownMenuItem>重新生成</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">删除</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      <div className="bg-muted rounded-md p-3">
+                        <div className="flex items-center justify-between">
+                          <code className="text-sm font-mono">{apiKey.key}****</code>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(apiKey.key);
+                              toast({
+                                title: "已复制",
+                                description: "API密钥已复制到剪贴板",
+                              });
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>权限：读写权限</div>
+                          <div>创建时间：{new Date().toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>使用统计</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 border rounded-lg">
+                      <div className="text-2xl font-bold text-primary">1,234</div>
+                      <div className="text-sm text-muted-foreground">今日调用次数</div>
+                    </div>
+                    <div className="text-center p-4 border rounded-lg">
+                      <div className="text-2xl font-bold text-success">99.9%</div>
+                      <div className="text-sm text-muted-foreground">成功率</div>
+                    </div>
+                    <div className="text-center p-4 border rounded-lg">
+                      <div className="text-2xl font-bold text-warning">45ms</div>
+                      <div className="text-sm text-muted-foreground">平均响应时间</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* 系统设置 */}

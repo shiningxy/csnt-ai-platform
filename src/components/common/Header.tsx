@@ -22,10 +22,9 @@ const currentUser = {
 };
 
 const navigationItems = [
-  { label: '首页', href: '/', roles: ['all'] },
-  { label: '我的申请', href: '/my-applications', roles: ['algorithm_engineer', 'team_lead'] },
+  { label: '算法库', href: '/', roles: ['all'] },
   { label: '审批中心', href: '/approval', roles: ['team_lead', 'admin'] },
-  { label: '管理看板', href: '/admin', roles: ['admin'] },
+  { label: '管理面板', href: '/admin', roles: ['admin'] },
 ];
 
 export function Header() {

@@ -1,0 +1,554 @@
+import { useState } from "react";
+import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+
+// Mock data
+const notifications = [
+  { id: 1, type: "system", title: "系统维护通知", message: "系统将于今晚22:00-24:00进行维护", time: "10分钟前", read: false },
+  { id: 2, type: "algorithm", title: "新算法待审核", message: "用户张三提交了新的排序算法", time: "1小时前", read: false },
+  { id: 3, type: "user", title: "用户注册", message: "新用户李四已注册", time: "2小时前", read: true },
+  { id: 4, type: "security", title: "安全警告", message: "检测到异常登录行为", time: "3小时前", read: false },
+];
+
+const drafts = [
+  { id: 1, title: "快速排序算法优化", category: "排序算法", lastModified: "2024-01-15", status: "草稿" },
+  { id: 2, title: "机器学习推荐系统", category: "推荐算法", lastModified: "2024-01-14", status: "草稿" },
+  { id: 3, title: "图像识别优化方案", category: "计算机视觉", lastModified: "2024-01-13", status: "草稿" },
+];
+
+const users = [
+  { id: 1, name: "张三", email: "zhangsan@example.com", role: "管理员", status: "活跃", lastLogin: "2024-01-15 14:30" },
+  { id: 2, name: "李四", email: "lisi@example.com", role: "编辑", status: "活跃", lastLogin: "2024-01-15 10:20" },
+  { id: 3, name: "王五", email: "wangwu@example.com", role: "用户", status: "离线", lastLogin: "2024-01-14 16:45" },
+];
+
+const roles = [
+  { id: 1, name: "超级管理员", permissions: 15, users: 1, description: "拥有所有权限" },
+  { id: 2, name: "管理员", permissions: 12, users: 2, description: "拥有大部分管理权限" },
+  { id: 3, name: "编辑", permissions: 8, users: 5, description: "可以编辑内容" },
+  { id: 4, name: "用户", permissions: 3, users: 128, description: "基础用户权限" },
+];
+
+export default function AdminPanel() {
+  const [activeTab, setActiveTab] = useState("notifications");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-heading mb-2">管理面板</h1>
+          <p className="text-muted-foreground">系统管理和配置中心</p>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              消息通知
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              个人中心
+            </TabsTrigger>
+            <TabsTrigger value="drafts" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              我的草稿
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              权限管理
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              系统设置
+            </TabsTrigger>
+          </TabsList>
+
+          {/* 消息通知 */}
+          <TabsContent value="notifications" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">消息通知</h2>
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="搜索通知..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {notifications.map((notification) => (
+                <Card key={notification.id} className={`transition-all ${!notification.read ? 'border-primary/50 bg-primary-light/30' : ''}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${!notification.read ? 'bg-primary' : 'bg-muted'}`} />
+                        <div>
+                          <h3 className="font-medium">{notification.title}</h3>
+                          <p className="text-sm text-muted-foreground">{notification.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem>标记为已读</DropdownMenuItem>
+                          <DropdownMenuItem>删除</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* 个人中心 */}
+          <TabsContent value="profile" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>个人信息</CardTitle>
+                  <CardDescription>管理您的个人资料</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarFallback>管理</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">系统管理员</h3>
+                      <p className="text-sm text-muted-foreground">admin@example.com</p>
+                      <Badge variant="secondary" className="mt-1">超级管理员</Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">用户名</Label>
+                    <Input id="username" value="admin" readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">邮箱</Label>
+                    <Input id="email" value="admin@example.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">手机号</Label>
+                    <Input id="phone" value="+86 138****8888" />
+                  </div>
+                  <Button>保存更改</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>安全设置</CardTitle>
+                  <CardDescription>保护您的账户安全</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">两步验证</p>
+                      <p className="text-sm text-muted-foreground">增强账户安全性</p>
+                    </div>
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">登录通知</p>
+                      <p className="text-sm text-muted-foreground">新设备登录时通知</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <Button variant="outline" className="w-full">修改密码</Button>
+                  <Button variant="outline" className="w-full">查看登录记录</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* 我的草稿 */}
+          <TabsContent value="drafts" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">我的草稿</h2>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                新建草稿
+              </Button>
+            </div>
+
+            <div className="grid gap-4">
+              {drafts.map((draft) => (
+                <Card key={draft.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{draft.title}</h3>
+                        <div className="flex items-center gap-4 mt-1">
+                          <Badge variant="outline">{draft.category}</Badge>
+                          <span className="text-sm text-muted-foreground">最后修改: {draft.lastModified}</span>
+                          <Badge variant="secondary">{draft.status}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* 权限管理 */}
+          <TabsContent value="permissions" className="space-y-6">
+            <Tabs defaultValue="users" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="users">用户管理</TabsTrigger>
+                <TabsTrigger value="roles">角色权限</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="users" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">用户管理</h3>
+                  <div className="flex items-center gap-2">
+                    <Input placeholder="搜索用户..." className="w-64" />
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          添加用户
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>添加新用户</DialogTitle>
+                          <DialogDescription>
+                            填写用户信息并分配角色
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new-username">用户名</Label>
+                            <Input id="new-username" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-email">邮箱</Label>
+                            <Input id="new-email" type="email" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-role">角色</Label>
+                            <Select>
+                              <SelectTrigger>
+                                <SelectValue placeholder="选择角色" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">管理员</SelectItem>
+                                <SelectItem value="editor">编辑</SelectItem>
+                                <SelectItem value="user">用户</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button className="w-full">创建用户</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-4">用户</th>
+                            <th className="text-left p-4">角色</th>
+                            <th className="text-left p-4">状态</th>
+                            <th className="text-left p-4">最后登录</th>
+                            <th className="text-left p-4">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {users.map((user) => (
+                            <tr key={user.id} className="border-b">
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarFallback>{user.name.slice(0, 1)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <Badge variant={user.role === "管理员" ? "default" : "secondary"}>
+                                  {user.role}
+                                </Badge>
+                              </td>
+                              <td className="p-4">
+                                <Badge variant={user.status === "活跃" ? "default" : "secondary"}>
+                                  {user.status}
+                                </Badge>
+                              </td>
+                              <td className="p-4 text-sm text-muted-foreground">{user.lastLogin}</td>
+                              <td className="p-4">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem>编辑</DropdownMenuItem>
+                                    <DropdownMenuItem>重置密码</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive">删除</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="roles" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">角色权限</h3>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    添加角色
+                  </Button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {roles.map((role) => (
+                    <Card key={role.id}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{role.name}</CardTitle>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem>编辑权限</DropdownMenuItem>
+                              <DropdownMenuItem>复制角色</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">删除角色</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <CardDescription>{role.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Key className="h-4 w-4" />
+                            <span>{role.permissions} 项权限</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <span>{role.users} 个用户</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          {/* 系统设置 */}
+          <TabsContent value="settings" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>基础设置</CardTitle>
+                  <CardDescription>系统基本配置</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="site-name">站点名称</Label>
+                    <Input id="site-name" value="AI算法平台" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="site-desc">站点描述</Label>
+                    <Textarea id="site-desc" value="专业的AI算法分享与交流平台" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">维护模式</p>
+                      <p className="text-sm text-muted-foreground">开启后用户无法访问</p>
+                    </div>
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">用户注册</p>
+                      <p className="text-sm text-muted-foreground">允许新用户注册</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>安全设置</CardTitle>
+                  <CardDescription>系统安全配置</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">强制HTTPS</p>
+                      <p className="text-sm text-muted-foreground">重定向HTTP到HTTPS</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">API访问限制</p>
+                      <p className="text-sm text-muted-foreground">限制API请求频率</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="session-timeout">会话超时 (分钟)</Label>
+                    <Input id="session-timeout" type="number" value="30" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password-policy">密码策略</Label>
+                    <Select defaultValue="medium">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">低 (6位数字字母)</SelectItem>
+                        <SelectItem value="medium">中 (8位包含特殊字符)</SelectItem>
+                        <SelectItem value="high">高 (12位复杂密码)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>数据备份</CardTitle>
+                  <CardDescription>系统数据备份管理</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">自动备份</p>
+                      <p className="text-sm text-muted-foreground">定期自动备份数据</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="backup-interval">备份间隔</Label>
+                    <Select defaultValue="daily">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hourly">每小时</SelectItem>
+                        <SelectItem value="daily">每天</SelectItem>
+                        <SelectItem value="weekly">每周</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1">
+                      <Database className="h-4 w-4 mr-2" />
+                      立即备份
+                    </Button>
+                    <Button variant="outline" className="flex-1">恢复数据</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>系统监控</CardTitle>
+                  <CardDescription>系统运行状态监控</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">CPU使用率</span>
+                      <span className="text-sm font-medium">45%</span>
+                    </div>
+                    <div className="w-full bg-secondary h-2 rounded-full">
+                      <div className="bg-primary h-2 rounded-full" style={{ width: '45%' }} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">内存使用率</span>
+                      <span className="text-sm font-medium">67%</span>
+                    </div>
+                    <div className="w-full bg-secondary h-2 rounded-full">
+                      <div className="bg-warning h-2 rounded-full" style={{ width: '67%' }} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">磁盘使用率</span>
+                      <span className="text-sm font-medium">23%</span>
+                    </div>
+                    <div className="w-full bg-secondary h-2 rounded-full">
+                      <div className="bg-success h-2 rounded-full" style={{ width: '23%' }} />
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full">查看详细监控</Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline">重置设置</Button>
+              <Button>保存所有设置</Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

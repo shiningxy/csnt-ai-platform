@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/common/Header";
 import AlgorithmList from "./pages/AlgorithmList";
 import AlgorithmDetail from "./pages/AlgorithmDetail";
+import ApprovalCenter from "./pages/ApprovalCenter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<AlgorithmList />} />
             <Route path="/algorithm/:id" element={<AlgorithmDetail />} />
+            <Route path="/approval" element={<ApprovalCenter />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

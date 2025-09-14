@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Camera, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -108,6 +108,7 @@ export function AvatarUpload({ currentAvatar, userName, onAvatarChange }: Avatar
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>更换头像</DialogTitle>
+              <DialogDescription>上传图片或从预设中选择一个新头像</DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6">

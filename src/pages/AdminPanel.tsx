@@ -595,8 +595,29 @@ export default function AdminPanel() {
                       <Textarea placeholder="密钥用途说明..." />
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline">取消</Button>
-                      <Button>创建密钥</Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          // Close dialog logic would go here
+                          toast({
+                            title: "已取消",
+                            description: "已取消创建API密钥",
+                          });
+                        }}
+                      >
+                        取消
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          // Create API key logic would go here
+                          toast({
+                            title: "创建成功",
+                            description: "API密钥已创建，请妥善保管",
+                          });
+                        }}
+                      >
+                        创建密钥
+                      </Button>
                     </div>
                   </div>
                 </DialogContent>
@@ -640,9 +661,38 @@ export default function AdminPanel() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem>查看详情</DropdownMenuItem>
-                            <DropdownMenuItem>重新生成</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">删除</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                toast({
+                                  title: "查看详情",
+                                  description: `查看 ${apiKey.name} 的详细信息`,
+                                });
+                              }}
+                            >
+                              查看详情
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                toast({
+                                  title: "重新生成",
+                                  description: `${apiKey.name} 密钥已重新生成`,
+                                });
+                              }}
+                            >
+                              重新生成
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => {
+                                toast({
+                                  title: "删除成功",
+                                  description: `${apiKey.name} 已删除`,
+                                  variant: "destructive",
+                                });
+                              }}
+                            >
+                              删除
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

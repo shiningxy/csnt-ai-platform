@@ -303,7 +303,14 @@ int main() {
               <div className="font-medium text-foreground mb-1">API Key 说明</div>
               <div className="text-muted-foreground">
                 请将代码中的 <code className="bg-muted px-1 rounded text-xs">YOUR_API_KEY</code> 替换为您的实际API Key。
-                如需申请API Key，请前往 <span className="text-primary cursor-pointer">管理面板</span> 进行管理。
+                如需申请API Key，请前往 <span 
+                  className="text-primary cursor-pointer hover:underline"
+                  onClick={() => {
+                    window.open('/admin?tab=api-keys', '_blank');
+                  }}
+                >
+                  管理面板
+                </span> 进行管理。
               </div>
             </div>
           </div>

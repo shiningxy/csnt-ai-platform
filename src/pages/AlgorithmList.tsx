@@ -14,7 +14,7 @@ import {
 import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
 import { mockAlgorithms } from '@/data/mockData';
-import { DraftStorage } from '@/lib/storage';
+import { DraftStorage, ApplicationStorage } from '@/lib/storage';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -34,7 +34,7 @@ export default function AlgorithmList() {
 
   // Filter and sort algorithms
   const filteredAlgorithms = useMemo(() => {
-    // 合并草稿数据和已发布的算法
+    // 合并草稿、已提交申请与已发布的算法
     const drafts = DraftStorage.getAllDrafts().map(draft => ({
       id: draft.id,
       name: draft.name,
@@ -61,8 +61,35 @@ export default function AlgorithmList() {
       rating: 0,
       popularity: 0,
     }));
+
+    const submitted = ApplicationStorage.getAllApplications().map(app => ({
+      id: app.id,
+      name: app.name,
+      category: app.category,
+      subCategory: app.subCategory,
+      tags: app.tags,
+      description: app.description,
+      status: app.status as any,
+      owner: app.owner,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+      applicableScenarios: app.applicableScenarios,
+      targetUsers: app.targetUsers,
+      interactionMethod: app.interactionMethod as any,
+      inputDataSource: app.inputDataSource,
+      inputDataType: app.inputDataType as any,
+      outputSchema: app.outputSchema,
+      resourceRequirements: app.resourceRequirements,
+      deploymentProcess: app.deploymentMethod?.join(', ') || app.deploymentProcess || '',
+      pseudoCode: app.pseudoCode || '',
+      apiExample: app.apiExample || '',
+      approvalRecords: app.approvalRecords || [],
+      callCount: app.callCount || 0,
+      rating: app.rating || 0,
+      popularity: app.popularity || 0,
+    }));
     
-    let filtered = [...mockAlgorithms, ...drafts];
+    let filtered = [...mockAlgorithms, ...drafts, ...submitted];
 
     // Search filter
     if (filters.search) {

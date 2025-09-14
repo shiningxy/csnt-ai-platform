@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { CodeBlock } from '@/components/ui/code-block';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, ArrowRight, Save, Send, Upload, FileText, Code, Settings, Users } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -83,6 +84,8 @@ export default function AlgorithmApply() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [missingFields, setMissingFields] = useState<{label: string; step: number; name: string; message?: string}[]>([]);
 
   const form = useForm<AlgorithmApplyFormData>({
     resolver: zodResolver(algorithmApplySchema),
@@ -258,6 +261,54 @@ window.algorithmConfig = {
     }
   };
 
+  // 提交校验失败时的处理：收集缺失字段并弹窗提示
+  const handleInvalid = (errors: any) => {
+    const labelMap: Record<string, string> = {
+      name: '算法名称',
+      category: '业务大类',
+      subCategory: '业务小方向',
+      tags: '算法标签',
+      description: '简要描述',
+      preprocessing: '数据预处理',
+      featureEngineering: '特征工程',
+      modelStructure: '模型结构',
+      postProcessing: '后处理',
+      exceptionHandling: '异常处理',
+      interactionMethod: '调用方式',
+      deploymentMethod: '部署方式',
+      dependencies: '依赖清单',
+      resourceRequirements: '资源需求',
+      inputDataSource: '输入数据源',
+      inputDataType: '输入数据类型',
+      outputSchema: '输出标准',
+      applicableScenarios: '适用场景',
+      targetUsers: '目标用户',
+    };
+    const getStepByField = (name: string) => {
+      if (['name','category','subCategory','tags','description'].includes(name)) return 0;
+      if (['preprocessing','featureEngineering','modelStructure','postProcessing','exceptionHandling'].includes(name)) return 1;
+      if (['interactionMethod','deploymentMethod','dependencies'].includes(name)) return 2;
+      if (['applicableScenarios','targetUsers','inputDataSource','inputDataType','outputSchema','resourceRequirements'].includes(name)) return 3;
+      return 0;
+    };
+    const items: {label: string; step: number; name: string; message?: string}[] = [];
+    Object.keys(errors).forEach((key) => {
+      const err = (errors as any)[key];
+      items.push({
+        label: labelMap[key] || key,
+        step: getStepByField(key),
+        name: key,
+        message: typeof err?.message === 'string' ? err.message : undefined,
+      });
+    });
+    if (items.length > 0) {
+      const firstStep = Math.min(...items.map(i => i.step));
+      setCurrentStep(firstStep);
+      setMissingFields(items);
+      setValidationOpen(true);
+    }
+  };
+
   const saveDraft = () => {
     try {
       const currentData = form.getValues();
@@ -350,7 +401,7 @@ window.algorithmConfig = {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, handleInvalid)} className="space-y-8">
           {/* 第一步：基础信息 */}
           {currentStep === 0 && (
             <Card>
@@ -1131,6 +1182,32 @@ window.algorithmConfig = {
           </div>
         </form>
       </Form>
+
+      <Dialog open={validationOpen} onOpenChange={setValidationOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>请完善以下必填项</DialogTitle>
+            <DialogDescription>提交前需补全信息，点击可定位到对应步骤。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {missingFields.length === 0 ? (
+              <p className="text-sm text-muted-foreground">所有必填项已完成</p>
+            ) : (
+              missingFields.map((f, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm">
+                  <div className="flex-1">
+                    <span className="font-medium">{f.label}</span>
+                    {f.message && <span className="text-muted-foreground ml-2">{f.message}</span>}
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => { setCurrentStep(f.step); setValidationOpen(false); }}>
+                    前往第{f.step + 1}步
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

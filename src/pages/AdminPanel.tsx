@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +43,15 @@ const roles = [
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // 处理URL参数来切换tab
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'settings'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">

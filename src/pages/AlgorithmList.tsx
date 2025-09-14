@@ -15,6 +15,7 @@ import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
 import { mockAlgorithms } from '@/data/mockData';
 import { DraftStorage, ApplicationStorage } from '@/lib/storage';
+import Silk from '@/components/effects/Silk';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -158,9 +159,22 @@ export default function AlgorithmList() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-background">
+      {/* Hero Section with Silk Background */}
       <div className="relative overflow-hidden h-screen">
+        {/* Silk Background - Only for Hero Section */}
+        <div className="absolute inset-0 z-0">
+          <Silk
+            speed={6}
+            scale={1}
+            color="#409eff"
+            noiseIntensity={1.5}
+            rotation={0}
+          />
+        </div>
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/20 to-accent/20 z-10" />
         
         {/* Gradient Overlay */}
         

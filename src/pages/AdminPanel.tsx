@@ -282,7 +282,7 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto pt-20 px-6 pb-6">
         <div className="mb-8">
           <h1 className="text-heading mb-2">管理面板</h1>
           <p className="text-muted-foreground">系统管理和配置中心</p>

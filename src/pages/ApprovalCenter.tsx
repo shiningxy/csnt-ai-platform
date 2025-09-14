@@ -335,7 +335,7 @@ const ApprovalCenter = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto pt-20 pb-8 space-y-6">
       {/* 页面标题 */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">

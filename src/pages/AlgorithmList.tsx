@@ -161,7 +161,7 @@ export default function AlgorithmList() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative overflow-hidden h-[520px] md:h-[680px]">
+      <div className="relative overflow-hidden h-screen">
         {/* Silk Background */}
         <div className="absolute inset-0 z-0">
           <Silk

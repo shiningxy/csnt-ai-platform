@@ -56,6 +56,7 @@ export function Header() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleUserMenuClick = (action: string) => {
+    console.log('点击菜单项:', action); // 添加调试信息
     switch (action) {
       case 'profile':
         navigate('/admin?tab=profile');
@@ -186,7 +187,7 @@ export function Header() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-background border shadow-lg" align="end" forceMount>
+              <DropdownMenuContent className="w-56 z-50 bg-popover border shadow-lg" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="font-medium">{currentUser.name}</p>
@@ -194,21 +195,45 @@ export function Header() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleUserMenuClick('profile')}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserMenuClick('profile');
+                  }}
+                >
                   <User className="mr-2 h-4 w-4" />
                   个人中心
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleUserMenuClick('drafts')}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserMenuClick('drafts');
+                  }}
+                >
                   <FileText className="mr-2 h-4 w-4" />
                   我的草稿
                 </DropdownMenuItem>
                 {currentUser.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => handleUserMenuClick('permissions')}>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleUserMenuClick('permissions');
+                    }}
+                  >
                     <Shield className="mr-2 h-4 w-4" />
                     权限管理
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => handleUserMenuClick('settings')}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserMenuClick('settings');
+                  }}
+                >
                   <Settings className="mr-2 h-4 w-4" />
                   设置
                 </DropdownMenuItem>

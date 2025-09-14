@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,17 +42,20 @@ const roles = [
 ];
 
 export default function AdminPanel() {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
 
   // 处理URL参数来切换tab
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
+    console.log('URL tab参数:', tab); // 添加调试信息
     if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'settings'].includes(tab)) {
       setActiveTab(tab);
+      console.log('设置activeTab为:', tab); // 添加调试信息
     }
-  }, []);
+  }, [location.search]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,7 +65,13 @@ export default function AdminPanel() {
           <p className="text-muted-foreground">系统管理和配置中心</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          // 更新URL参数
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', value);
+          window.history.pushState({}, '', url.toString());
+        }} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
@@ -155,15 +165,15 @@ export default function AdminPanel() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">用户名</Label>
-                    <Input id="username" value="admin" readOnly />
+                    <Input id="username" defaultValue="admin" readOnly />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">邮箱</Label>
-                    <Input id="email" value="admin@example.com" />
+                    <Input id="email" defaultValue="admin@example.com" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">手机号</Label>
-                    <Input id="phone" value="+86 138****8888" />
+                    <Input id="phone" defaultValue="+86 138****8888" />
                   </div>
                   <Button>保存更改</Button>
                 </CardContent>
@@ -414,11 +424,11 @@ export default function AdminPanel() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="site-name">站点名称</Label>
-                    <Input id="site-name" value="AI算法平台" />
+                    <Input id="site-name" defaultValue="AI算法平台" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="site-desc">站点描述</Label>
-                    <Textarea id="site-desc" value="专业的AI算法分享与交流平台" />
+                    <Textarea id="site-desc" defaultValue="专业的AI算法分享与交流平台" />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -459,7 +469,7 @@ export default function AdminPanel() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="session-timeout">会话超时 (分钟)</Label>
-                    <Input id="session-timeout" type="number" value="30" />
+                    <Input id="session-timeout" type="number" defaultValue="30" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password-policy">密码策略</Label>

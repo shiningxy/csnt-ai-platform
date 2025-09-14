@@ -149,6 +149,10 @@ All colors MUST be HSL.
     --border: 0 0% 15%;
     --input: 0 0% 15%;
     --ring: 210 100% 56%;
+    
+    /* Dark Mode Gradients - Better readability */
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(0 0% 10%));
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

@@ -86,7 +86,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-transparent bg-transparent text-white">
+    <header className="sticky top-0 z-50 w-full bg-white/10 backdrop-blur-xl text-white">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Platform Name */}

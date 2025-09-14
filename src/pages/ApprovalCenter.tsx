@@ -1,551 +1,757 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Eye,
+  Calendar,
+  Users,
+  FileText,
+  AlertCircle,
+  TrendingUp,
+  UserCheck,
+  Settings,
+  MessageSquare
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { CalendarIcon, FileText, Clock, User, MessageSquare, Upload } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { AlgorithmAsset, ApprovalRecord, UserRole } from "@/types/algorithm";
-import { mockUsers } from "@/data/mockData";
-import { ApplicationStorage, SubmittedApplication } from "@/lib/storage";
+import type { AlgorithmAsset, ApprovalRecord, UserRole, ReviewAssignment, ReviewRecord, AlgorithmStatus } from '@/types/algorithm';
+import { ApplicationStorage, ReviewStorage } from '@/lib/storage';
+import { NotificationManager, NotificationTemplates } from '@/lib/notification';
+import { ReviewAssignmentDialog } from '@/components/approval/ReviewAssignmentDialog';
+import { ReviewResultDialog } from '@/components/approval/ReviewResultDialog';
 
-// Mock pending approval data
+// 模拟数据和类型定义
 const mockPendingApprovals: AlgorithmAsset[] = [
-  {
-    id: "3",
-    name: "智能船舶路径规划算法",
-    category: "智能运营",
-    subCategory: "节能减排",
-    tags: ["路径优化", "节能", "API服务"],
-    description: "基于海况和燃油消耗优化的智能船舶路径规划",
-    status: "pending_review",
-    owner: "王小明",
-    createdAt: "2025-01-10T10:00:00Z",
-    updatedAt: "2025-01-10T10:00:00Z",
-    applicableScenarios: "用于远洋货轮的航行路径优化，降低燃油消耗",
-    targetUsers: ["船长", "航运调度员"],
-    interactionMethod: "api",
-    inputDataSource: "船舶实时位置数据",
-    inputDataType: "json",
-    outputSchema: "最优路径坐标点数组",
-    resourceRequirements: "CPU: 4核, 内存: 8GB",
-    deploymentProcess: "Docker部署",
-    pseudoCode: "1. 获取海况数据\n2. 计算路径成本\n3. 优化算法求解",
-    apiExample: "POST /api/v1/route/optimize",
-    approvalRecords: [],
-    callCount: 0,
-    rating: 0,
-    popularity: 0
-  },
-  {
-    id: "4", 
-    name: "港口货物识别AI",
-    category: "智能运营",
-    subCategory: "港口拥堵分析",
-    tags: ["图像识别", "AI", "实时处理"],
-    description: "基于计算机视觉的港口货物自动识别与分类",
-    status: "pending_review",
-    owner: "李华",
-    createdAt: "2025-01-08T14:30:00Z",
-    updatedAt: "2025-01-08T14:30:00Z",
-    applicableScenarios: "港口货物自动化盘点和分类管理",
-    targetUsers: ["港口管理员", "仓储人员"],
-    interactionMethod: "api",
-    inputDataSource: "港口摄像头实时画面",
-    inputDataType: "image",
-    outputSchema: "货物类型、数量、位置信息",
-    resourceRequirements: "GPU: 1张V100, CPU: 8核, 内存: 16GB",
-    deploymentProcess: "K8s部署",
-    pseudoCode: "1. 图像预处理\n2. 目标检测\n3. 分类识别\n4. 结果输出",
-    apiExample: "POST /api/v1/cargo/detect",
-    approvalRecords: [],
-    callCount: 0,
-    rating: 0,
-    popularity: 0
-  }
+  // 模拟一些待审批的算法
 ];
 
 interface ApprovalFormData {
-  needMeeting: boolean;
-  meetingDate: Date | undefined;
-  attendees: string[];
-  conclusion: "approved" | "conditional" | "rejected" | "";
+  conclusion: 'approved' | 'rejected' | 'conditional';
   comment: string;
-  conditions?: string;
+  meetingDate?: string;
+  selectedAttendees: string[];
   rejectionReason?: string;
+  conditions?: string;
 }
 
-export default function ApprovalCenter() {
+const mockUsers = [
+  { id: 'user1', name: '张三', role: 'algorithm_engineer' as UserRole },
+  { id: 'user2', name: '李四', role: 'team_lead' as UserRole },
+  { id: 'user3', name: '王五', role: 'product_manager' as UserRole },
+];
+
+const ApprovalCenter = () => {
   const { toast } = useToast();
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmAsset | null>(null);
-  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
-  const [pendingApplications, setPendingApplications] = useState<(AlgorithmAsset | SubmittedApplication)[]>(() => {
-    // 合并静态数据和动态数据
-    const dynamicApps = ApplicationStorage.getPendingApplications();
-    return [...mockPendingApprovals, ...dynamicApps];
-  });
-  const [approvalForm, setApprovalForm] = useState<ApprovalFormData>({
-    needMeeting: false,
-    meetingDate: undefined,
-    attendees: [],
-    conclusion: "",
-    comment: ""
-  });
 
-  // Mock current user - should be from auth context
-  const currentUser = mockUsers.find(u => u.role === 'team_lead') || mockUsers[0];
+  // 模拟当前用户（实际应用中从认证系统获取）
+  const currentUser = { 
+    id: 'current_user',
+    name: '李四', 
+    role: 'team_lead' as UserRole 
+  };
 
-  // Check if user has approval permissions
-  const canApprove = ['team_lead', 'admin'].includes(currentUser.role);
+  // 检查用户是否有审批权限
+  const hasApprovalPermission = ['team_lead', 'product_manager', 'admin'].includes(currentUser.role);
 
-  if (!canApprove) {
+  if (!hasApprovalPermission) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="text-center py-8">
-            <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">权限不足</h2>
-            <p className="text-muted-foreground">
-              您没有访问审批中心的权限。请联系管理员获取相应权限。
-            </p>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-muted-foreground mb-4">权限不足</h1>
+          <p className="text-muted-foreground">您没有权限访问审批中心</p>
+        </div>
       </div>
     );
   }
 
+  // 状态管理
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmAsset | null>(null);
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isReviewAssignmentOpen, setIsReviewAssignmentOpen] = useState(false);
+  const [isReviewResultOpen, setIsReviewResultOpen] = useState(false);
+  const [pendingApplications, setPendingApplications] = useState<AlgorithmAsset[]>([]);
+  const [currentTab, setCurrentTab] = useState('pending');
+  const [approvalFormData, setApprovalFormData] = useState<ApprovalFormData>({
+    conclusion: 'approved',
+    comment: '',
+    meetingDate: '',
+    selectedAttendees: [],
+    rejectionReason: '',
+    conditions: ''
+  });
+
+  // 获取待审批申请
+  useEffect(() => {
+    const dynamicApps = ApplicationStorage.getPendingApplications().map(app => ({
+      ...app,
+      // 将SubmittedApplication转换为AlgorithmAsset格式
+      applicableScenarios: app.applicableScenarios,
+      targetUsers: app.targetUsers,
+      interactionMethod: app.interactionMethod as any,
+      inputDataSource: app.inputDataSource,
+      inputDataType: app.inputDataType as any,
+      outputSchema: app.outputSchema,
+      resourceRequirements: app.resourceRequirements,
+      deploymentProcess: app.deploymentProcess,
+      pseudoCode: app.pseudoCode,
+      apiExample: app.apiExample,
+      approvalRecords: app.approvalRecords as ApprovalRecord[],
+    })) as AlgorithmAsset[];
+
+    setPendingApplications([...mockPendingApprovals, ...dynamicApps]);
+  }, []);
+
+  // 获取不同状态的申请数据
+  const allApplications = ApplicationStorage.getAllApplications();
+  const pendingReviewApps = allApplications.filter(app => app.status === 'pending_review');
+  const underReviewApps = allApplications.filter(app => app.status === 'under_review');
+  const pendingConfirmationApps = allApplications.filter(app => app.status === 'pending_confirmation');
+
+  // 打开审批对话框
   const handleOpenApproval = (algorithm: AlgorithmAsset) => {
     setSelectedAlgorithm(algorithm);
-    setApprovalForm({
-      needMeeting: false,
-      meetingDate: undefined,
-      attendees: [],
-      conclusion: "",
-      comment: ""
-    });
     setIsApprovalDialogOpen(true);
+    setApprovalFormData({
+      conclusion: 'approved',
+      comment: '',
+      meetingDate: '',
+      selectedAttendees: [],
+      rejectionReason: '',
+      conditions: ''
+    });
   };
 
-  const handleSubmitApproval = () => {
-    if (!selectedAlgorithm || !approvalForm.conclusion) {
-      toast({
-        title: "请完善审批信息",
-        description: "请选择审批结论并填写审批意见",
-        variant: "destructive"
-      });
-      return;
-    }
+  // 发起评审
+  const handleInitiateReview = (algorithm: AlgorithmAsset) => {
+    setSelectedAlgorithm(algorithm);
+    setIsReviewAssignmentOpen(true);
+  };
 
-    if (approvalForm.conclusion === "conditional" && !approvalForm.conditions) {
-      toast({
-        title: "请填写修改条件",
-        description: "有条件通过需要说明具体的修改要求",
-        variant: "destructive"
-      });
-      return;
-    }
+  // 分配评审人
+  const handleAssignReviewers = (assignment: Omit<ReviewAssignment, 'id'>) => {
+    const assignmentWithId: ReviewAssignment = {
+      ...assignment,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    };
 
-    if (approvalForm.conclusion === "rejected" && !approvalForm.rejectionReason) {
-      toast({
-        title: "请填写驳回原因", 
-        description: "驳回申请需要说明具体原因",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Simulate API call
-    console.log("Submitting approval:", {
-      algorithmId: selectedAlgorithm.id,
-      approver: currentUser.name,
-      ...approvalForm
-    });
-
-    // 更新申请状态（只对动态申请有效）
-    if (selectedAlgorithm.id.startsWith('app_')) {
-      const newStatus = approvalForm.conclusion === "approved" ? "approved" : 
-                       approvalForm.conclusion === "conditional" ? "conditional" : "rejected";
-      
-      ApplicationStorage.updateApplicationStatus(selectedAlgorithm.id, newStatus);
-    }
+    // 保存评审分配记录
+    ReviewStorage.saveAssignment(assignmentWithId);
     
-    // 刷新待审批列表
-    const dynamicApps = ApplicationStorage.getPendingApplications();
-    setPendingApplications([...mockPendingApprovals, ...dynamicApps]);
+    // 更新申请状态和分配信息
+    ApplicationStorage.assignReviewers(assignment.algorithm_id, assignmentWithId);
+    
+    // 发送通知给评审人
+    assignment.reviewers.forEach(reviewer => {
+      const notification = NotificationTemplates.assignReview(
+        selectedAlgorithm?.name || '算法申请',
+        '5个工作日后'
+      );
+      
+      NotificationManager.createNotification({
+        recipient_id: reviewer.id,
+        recipient_name: reviewer.name,
+        title: notification.title,
+        content: notification.content,
+        type: notification.type,
+        channels: notification.channels,
+        algorithm_id: assignment.algorithm_id,
+      });
+    });
 
     toast({
-      title: "审批提交成功",
-      description: `已成功提交对"${selectedAlgorithm.name}"的审批结果`
+      title: "评审已发起",
+      description: `已成功为"${selectedAlgorithm?.name}"分配${assignment.reviewers.length}名评审人`,
     });
 
-    setIsApprovalDialogOpen(false);
-    setSelectedAlgorithm(null);
+    // 刷新数据
+    const dynamicApps = ApplicationStorage.getAllApplications().map(app => ({
+      ...app,
+      applicableScenarios: app.applicableScenarios,
+      targetUsers: app.targetUsers,
+      interactionMethod: app.interactionMethod as any,
+      inputDataSource: app.inputDataSource,
+      inputDataType: app.inputDataType as any,
+      outputSchema: app.outputSchema,
+      resourceRequirements: app.resourceRequirements,
+      deploymentProcess: app.deploymentProcess,
+      pseudoCode: app.pseudoCode,
+      apiExample: app.apiExample,
+      approvalRecords: app.approvalRecords as ApprovalRecord[],
+    })) as AlgorithmAsset[];
+
+    setPendingApplications(dynamicApps);
   };
 
-  const handleAttendeeToggle = (userId: string, checked: boolean) => {
-    setApprovalForm(prev => ({
-      ...prev,
-      attendees: checked 
-        ? [...prev.attendees, userId]
-        : prev.attendees.filter(id => id !== userId)
-    }));
+  // 完成评审
+  const handleCompleteReview = (algorithm: AlgorithmAsset) => {
+    setSelectedAlgorithm(algorithm);
+    setIsReviewResultOpen(true);
+  };
+
+  // 提交评审结果
+  const handleSubmitReviewResult = (review: Omit<ReviewRecord, 'id'>) => {
+    const reviewWithId: ReviewRecord = {
+      ...review,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    };
+
+    // 保存评审记录
+    ReviewStorage.saveReviewRecord(reviewWithId);
+    
+    // 更新申请状态
+    ApplicationStorage.submitReviewResult(review.algorithm_id, reviewWithId);
+    
+    // 检查是否所有评审人都已完成
+    const app = ApplicationStorage.getAllApplications().find(a => a.id === review.algorithm_id);
+    const allCompleted = app?.assignedReviewers?.every(reviewerId => 
+      app.completedReviewers?.includes(reviewerId)
+    ) || false;
+
+    if (allCompleted) {
+      // 通知组长确认结果
+      const notification = NotificationTemplates.reviewCompleted(
+        selectedAlgorithm?.name || '算法申请',
+        app?.completedReviewers?.length || 0,
+        app?.assignedReviewers?.length || 0
+      );
+      
+      NotificationManager.createNotification({
+        recipient_id: currentUser.id,
+        recipient_name: currentUser.name,
+        title: notification.title,
+        content: notification.content,
+        type: notification.type,
+        channels: notification.channels,
+        algorithm_id: review.algorithm_id,
+      });
+    }
+
+    toast({
+      title: "评审提交成功",
+      description: `已成功提交对"${selectedAlgorithm?.name}"的评审结果`,
+    });
+
+    // 刷新数据
+    const dynamicApps = ApplicationStorage.getAllApplications().map(app => ({
+      ...app,
+      applicableScenarios: app.applicableScenarios,
+      targetUsers: app.targetUsers,
+      interactionMethod: app.interactionMethod as any,
+      inputDataSource: app.inputDataSource,
+      inputDataType: app.inputDataType as any,
+      outputSchema: app.outputSchema,
+      resourceRequirements: app.resourceRequirements,
+      deploymentProcess: app.deploymentProcess,
+      pseudoCode: app.pseudoCode,
+      apiExample: app.apiExample,
+      approvalRecords: app.approvalRecords as ApprovalRecord[],
+    })) as AlgorithmAsset[];
+
+    setPendingApplications(dynamicApps);
+  };
+
+  // 确认评审结果
+  const handleConfirmReviewResult = (algorithmId: string, approved: boolean) => {
+    const newStatus: AlgorithmStatus = approved ? 'pending_product' : 'draft';
+    ApplicationStorage.updateApplicationStatus(algorithmId, newStatus);
+    
+    // 发送通知
+    const algorithm = allApplications.find(a => a.id === algorithmId);
+    if (algorithm) {
+      const notification = NotificationTemplates.approvalResult(
+        algorithm.name,
+        approved ? 'approved' : 'rejected',
+        approved ? '请产品同学跟进需求文档' : '请申请人修改后重新提交'
+      );
+      
+      NotificationManager.createNotification({
+        recipient_id: algorithm.owner,
+        recipient_name: algorithm.owner,
+        title: notification.title,
+        content: notification.content,
+        type: notification.type,
+        channels: notification.channels,
+        algorithm_id: algorithmId,
+      });
+    }
+
+    toast({
+      title: approved ? "审批通过" : "已打回修改",
+      description: approved ? "已转交产品经理跟进" : "已通知申请人修改",
+    });
+
+    // 刷新数据
+    const dynamicApps = ApplicationStorage.getAllApplications().map(app => ({
+      ...app,
+      applicableScenarios: app.applicableScenarios,
+      targetUsers: app.targetUsers,
+      interactionMethod: app.interactionMethod as any,
+      inputDataSource: app.inputDataSource,
+      inputDataType: app.inputDataType as any,
+      outputSchema: app.outputSchema,
+      resourceRequirements: app.resourceRequirements,
+      deploymentProcess: app.deploymentProcess,
+      pseudoCode: app.pseudoCode,
+      apiExample: app.apiExample,
+      approvalRecords: app.approvalRecords as ApprovalRecord[],
+    })) as AlgorithmAsset[];
+
+    setPendingApplications(dynamicApps);
+  };
+
+  // 获取状态Badge组件
+  const getStatusBadge = (status: AlgorithmStatus) => {
+    switch (status) {
+      case 'pending_review':
+        return <Badge variant="secondary" className="bg-warning/20 text-warning">待评审</Badge>;
+      case 'under_review':
+        return <Badge variant="secondary" className="bg-primary/20 text-primary">评审中</Badge>;
+      case 'pending_confirmation':
+        return <Badge variant="secondary" className="bg-success/20 text-success">待确认</Badge>;
+      case 'pending_product':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-700">待产品</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  // 计算统计数据
+  const stats = {
+    pending: pendingReviewApps.length,
+    underReview: underReviewApps.length,
+    pendingConfirmation: pendingConfirmationApps.length,
+    completed: allApplications.filter(app => ['pending_product', 'pending_frontend', 'live'].includes(app.status)).length,
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">审批中心</h1>
+    <div className="container mx-auto py-8 space-y-6">
+      {/* 页面标题 */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <Settings className="h-8 w-8 text-primary" />
+          审批中心
+        </h1>
         <p className="text-muted-foreground">
-          管理算法申请的审批流程，确保算法质量和安全性
+          管理算法申请的评审分配、进度跟踪和结果确认流程
         </p>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">待审批</p>
-                <p className="text-2xl font-bold text-warning">{pendingApplications.length}</p>
-              </div>
-              <Clock className="h-8 w-8 text-warning" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">本月已审批</p>
-                <p className="text-2xl font-bold text-success">12</p>
-              </div>
-              <FileText className="h-8 w-8 text-success" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">待发起评审</CardTitle>
+            <Clock className="h-4 w-4 text-warning" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-warning">{stats.pending}</div>
+            <p className="text-xs text-muted-foreground">需要分配评审人</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">通过率</p>
-                <p className="text-2xl font-bold text-primary">85%</p>
-              </div>
-              <Badge className="h-8 w-8 rounded-full p-0 flex items-center justify-center">✓</Badge>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">评审进行中</CardTitle>
+            <UserCheck className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">{stats.underReview}</div>
+            <p className="text-xs text-muted-foreground">评审人处理中</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">平均审批时间</p>
-                <p className="text-2xl font-bold text-info">2.3天</p>
-              </div>
-              <User className="h-8 w-8 text-info" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">待确认结果</CardTitle>
+            <CheckCircle className="h-4 w-4 text-success" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">{stats.pendingConfirmation}</div>
+            <p className="text-xs text-muted-foreground">组长确认中</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">已完成审批</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.completed}</div>
+            <p className="text-xs text-muted-foreground">本月累计</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Pending Approvals Table */}
+      {/* 审批列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>待审批算法列表</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            算法申请审批
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {pendingApplications.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">暂无待审批项目</h3>
-              <p className="text-muted-foreground">所有提交的算法申请都已处理完成</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>算法名称</TableHead>
-                  <TableHead>申请人</TableHead>
-                  <TableHead>提交时间</TableHead>
-                  <TableHead>业务分类</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingApplications.map((algorithm) => (
-                  <TableRow key={algorithm.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{algorithm.name}</div>
-                        <div className="text-sm text-muted-foreground line-clamp-1">
-                          {algorithm.description}
+          <Tabs value={currentTab} onValueChange={setCurrentTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="pending">待发起评审 ({stats.pending})</TabsTrigger>
+              <TabsTrigger value="reviewing">评审中 ({stats.underReview})</TabsTrigger>
+              <TabsTrigger value="confirming">待确认 ({stats.pendingConfirmation})</TabsTrigger>
+              <TabsTrigger value="completed">已完成 ({stats.completed})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pending" className="mt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>算法名称</TableHead>
+                    <TableHead>申请人</TableHead>
+                    <TableHead>提交时间</TableHead>
+                    <TableHead>分类</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingReviewApps.map((app) => (
+                    <TableRow key={app.id}>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{app.name}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-1">
+                            {app.description}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{algorithm.owner}</TableCell>
-                    <TableCell>
-                      {format(new Date(algorithm.createdAt), "yyyy-MM-dd HH:mm")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="text-sm">{algorithm.category}</div>
-                        <div className="text-xs text-muted-foreground">{algorithm.subCategory}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={algorithm.status} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Dialog 
-                          open={isApprovalDialogOpen && selectedAlgorithm?.id === algorithm.id}
-                          onOpenChange={(open) => {
-                            if (!open) {
-                              setIsApprovalDialogOpen(false);
-                              setSelectedAlgorithm(null);
-                            }
-                          }}
-                        >
-                          <DialogTrigger asChild>
+                      </TableCell>
+                      <TableCell>{app.owner}</TableCell>
+                      <TableCell>
+                        {new Date(app.createdAt).toLocaleDateString('zh-CN')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{app.category}</div>
+                          <div className="text-xs text-muted-foreground">{app.subCategory}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(app.status)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
                           <Button 
-                            size="sm" 
-                            onClick={() => handleOpenApproval(algorithm as AlgorithmAsset)}
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleInitiateReview(app as AlgorithmAsset)}
                           >
-                              评审
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>算法审批 - {selectedAlgorithm?.name}</DialogTitle>
-                            </DialogHeader>
-                            
-                            {selectedAlgorithm && (
-                              <div className="space-y-6">
-                                {/* Algorithm Info */}
-                                <div className="p-4 bg-muted/50 rounded-lg">
-                                  <h4 className="font-semibold mb-2">申请信息</h4>
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                      <span className="text-muted-foreground">申请人：</span>
-                                      {selectedAlgorithm.owner}
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground">提交时间：</span>
-                                      {format(new Date(selectedAlgorithm.createdAt), "yyyy-MM-dd HH:mm")}
-                                    </div>
-                                    <div className="col-span-2">
-                                      <span className="text-muted-foreground">算法描述：</span>
-                                      {selectedAlgorithm.description}
-                                    </div>
-                                  </div>
-                                </div>
+                            <Users className="h-4 w-4 mr-1" />
+                            发起评审
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(`/algorithm/${app.id}`, '_blank')}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            查看详情
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {pendingReviewApps.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        暂无待发起评审的申请
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
 
-                                {/* Meeting Arrangement */}
-                                <div>
-                                  <Label className="text-base font-semibold">会议安排</Label>
-                                  <div className="mt-2 space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox 
-                                        id="needMeeting"
-                                        checked={approvalForm.needMeeting}
-                                        onCheckedChange={(checked) => 
-                                          setApprovalForm(prev => ({ ...prev, needMeeting: checked as boolean }))
-                                        }
-                                      />
-                                      <Label htmlFor="needMeeting">是否需要召开线下会议？</Label>
-                                    </div>
-
-                                    {approvalForm.needMeeting && (
-                                      <div className="space-y-4 pl-6">
-                                        <div>
-                                          <Label htmlFor="meetingDate">会议时间</Label>
-                                          <Popover>
-                                            <PopoverTrigger asChild>
-                                              <Button
-                                                variant="outline"
-                                                className={cn(
-                                                  "w-full justify-start text-left font-normal mt-1",
-                                                  !approvalForm.meetingDate && "text-muted-foreground"
-                                                )}
-                                              >
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {approvalForm.meetingDate ? 
-                                                  format(approvalForm.meetingDate, "yyyy-MM-dd") : 
-                                                  "选择会议日期"
-                                                }
-                                              </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0">
-                                              <Calendar
-                                                mode="single"
-                                                selected={approvalForm.meetingDate}
-                                                onSelect={(date) => 
-                                                  setApprovalForm(prev => ({ ...prev, meetingDate: date }))
-                                                }
-                                                initialFocus
-                                              />
-                                            </PopoverContent>
-                                          </Popover>
-                                        </div>
-
-                                        <div>
-                                          <Label>与会人员</Label>
-                                          <div className="mt-2 space-y-2">
-                                            {mockUsers
-                                              .filter(user => ['algorithm_engineer', 'team_lead', 'product_manager'].includes(user.role))
-                                              .map((user) => (
-                                              <div key={user.id} className="flex items-center space-x-2">
-                                                <Checkbox 
-                                                  id={`attendee-${user.id}`}
-                                                  checked={approvalForm.attendees.includes(user.id)}
-                                                  onCheckedChange={(checked) => 
-                                                    handleAttendeeToggle(user.id, checked as boolean)
-                                                  }
-                                                />
-                                                <Label htmlFor={`attendee-${user.id}`} className="text-sm">
-                                                  {user.name} ({user.role === 'algorithm_engineer' ? '算法工程师' : 
-                                                           user.role === 'team_lead' ? '组长' : '产品经理'})
-                                                </Label>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Approval Conclusion */}
-                                <div>
-                                  <Label className="text-base font-semibold">审批结论</Label>
-                                  <RadioGroup 
-                                    value={approvalForm.conclusion} 
-                                    onValueChange={(value) => 
-                                      setApprovalForm(prev => ({ ...prev, conclusion: value as any }))
-                                    }
-                                    className="mt-2"
-                                  >
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="approved" id="approved" />
-                                      <Label htmlFor="approved" className="text-success">✅ 通过（无修改）</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="conditional" id="conditional" />
-                                      <Label htmlFor="conditional" className="text-warning">⚠️ 有条件通过</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="rejected" id="rejected" />
-                                      <Label htmlFor="rejected" className="text-destructive">❌ 驳回</Label>
-                                    </div>
-                                  </RadioGroup>
-
-                                  {approvalForm.conclusion === "conditional" && (
-                                    <div className="mt-4">
-                                      <Label htmlFor="conditions">需要补充的内容</Label>
-                                      <Textarea
-                                        id="conditions"
-                                        placeholder="请详细说明需要补充或修改的内容..."
-                                        value={approvalForm.conditions || ""}
-                                        onChange={(e) => 
-                                          setApprovalForm(prev => ({ ...prev, conditions: e.target.value }))
-                                        }
-                                        className="mt-1"
-                                      />
-                                    </div>
-                                  )}
-
-                                  {approvalForm.conclusion === "rejected" && (
-                                    <div className="mt-4">
-                                      <Label htmlFor="rejectionReason">驳回原因</Label>
-                                      <Textarea
-                                        id="rejectionReason"
-                                        placeholder="请详细说明驳回的具体原因..."
-                                        value={approvalForm.rejectionReason || ""}
-                                        onChange={(e) => 
-                                          setApprovalForm(prev => ({ ...prev, rejectionReason: e.target.value }))
-                                        }
-                                        className="mt-1"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Approval Comments */}
-                                <div>
-                                  <Label htmlFor="comment" className="text-base font-semibold">审批意见</Label>
-                                  <Textarea
-                                    id="comment"
-                                    placeholder="请填写详细的审批意见和建议..."
-                                    value={approvalForm.comment}
-                                    onChange={(e) => 
-                                      setApprovalForm(prev => ({ ...prev, comment: e.target.value }))
-                                    }
-                                    className="mt-2"
-                                    rows={4}
-                                  />
-                                </div>
-
-                                {/* File Upload */}
-                                <div>
-                                  <Label className="text-base font-semibold">附件上传（可选）</Label>
-                                  <div className="mt-2 border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-                                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                                    <p className="text-sm text-muted-foreground">
-                                      上传会议录音、纪要或其他相关文件
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex justify-end space-x-2 pt-4">
-                                  <Button 
-                                    variant="outline" 
-                                    onClick={() => setIsApprovalDialogOpen(false)}
-                                  >
-                                    取消
-                                  </Button>
-                                  <Button onClick={handleSubmitApproval}>
-                                    提交审批
-                                  </Button>
-                                </div>
+            <TabsContent value="reviewing" className="mt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>算法名称</TableHead>
+                    <TableHead>申请人</TableHead>
+                    <TableHead>评审人</TableHead>
+                    <TableHead>完成情况</TableHead>
+                    <TableHead>会议安排</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {underReviewApps.map((app) => {
+                    const assignment = app.reviewAssignment;
+                    const completedCount = app.completedReviewers?.length || 0;
+                    const totalCount = app.assignedReviewers?.length || 0;
+                    
+                    return (
+                      <TableRow key={app.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{app.name}</div>
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {app.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{app.owner}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {assignment?.reviewers.map((reviewer) => (
+                              <Badge 
+                                key={reviewer.id} 
+                                variant={app.completedReviewers?.includes(reviewer.id) ? "default" : "outline"}
+                                className="text-xs"
+                              >
+                                {reviewer.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">
+                              {completedCount}/{totalCount} 已完成
+                            </div>
+                            <div className="w-full bg-secondary rounded-full h-2">
+                              <div 
+                                className="bg-primary h-2 rounded-full transition-all" 
+                                style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {assignment?.meeting_time ? (
+                            <div className="text-sm">
+                              <div>{assignment.meeting_type === 'offline' ? '线下' : '线上'}会议</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(assignment.meeting_time).toLocaleString('zh-CN')}
                               </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">无需会议</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {/* 当前用户是否为评审人且未完成评审 */}
+                            {app.assignedReviewers?.includes(currentUser.id) && 
+                             !app.completedReviewers?.includes(currentUser.id) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleCompleteReview(app as AlgorithmAsset)}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                完成评审
+                              </Button>
                             )}
-                          </DialogContent>
-                        </Dialog>
-                        
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => window.open(`/algorithm/${app.id}`, '_blank')}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              查看详情
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {underReviewApps.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        暂无正在评审的申请
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="confirming" className="mt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>算法名称</TableHead>
+                    <TableHead>申请人</TableHead>
+                    <TableHead>评审完成时间</TableHead>
+                    <TableHead>评审摘要</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingConfirmationApps.map((app) => {
+                    const reviews = app.reviewRecords || [];
+                    const approvedCount = reviews.filter(r => r.conclusion === 'approved').length;
+                    const conditionalCount = reviews.filter(r => r.conclusion === 'conditional').length;
+                    const rejectedCount = reviews.filter(r => r.conclusion === 'rejected').length;
+                    
+                    return (
+                      <TableRow key={app.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{app.name}</div>
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {app.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{app.owner}</TableCell>
+                        <TableCell>
+                          {reviews.length > 0 ? 
+                            new Date(Math.max(...reviews.map(r => new Date(r.completed_at || r.assigned_at).getTime()))).toLocaleString('zh-CN') :
+                            '-'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {approvedCount > 0 && (
+                              <Badge variant="default" className="text-xs bg-success/20 text-success">
+                                {approvedCount}通过
+                              </Badge>
+                            )}
+                            {conditionalCount > 0 && (
+                              <Badge variant="secondary" className="text-xs bg-warning/20 text-warning">
+                                {conditionalCount}需修改
+                              </Badge>
+                            )}
+                            {rejectedCount > 0 && (
+                              <Badge variant="destructive" className="text-xs">
+                                {rejectedCount}驳回
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => handleConfirmReviewResult(app.id, true)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              确认通过
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleConfirmReviewResult(app.id, false)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              打回修改
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => window.open(`/algorithm/${app.id}`, '_blank')}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              查看详情
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {pendingConfirmationApps.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        暂无待确认的评审结果
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="completed" className="mt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>算法名称</TableHead>
+                    <TableHead>申请人</TableHead>
+                    <TableHead>完成时间</TableHead>
+                    <TableHead>当前状态</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allApplications
+                    .filter(app => ['pending_product', 'pending_frontend', 'live'].includes(app.status))
+                    .map((app) => (
+                    <TableRow key={app.id}>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{app.name}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-1">
+                            {app.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{app.owner}</TableCell>
+                      <TableCell>
+                        {new Date(app.updatedAt).toLocaleDateString('zh-CN')}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(app.status)}
+                      </TableCell>
+                      <TableCell>
                         <Button 
-                          variant="outline" 
+                          variant="ghost" 
                           size="sm"
-                          onClick={() => window.open(`/algorithm/${algorithm.id}`, '_blank')}
+                          onClick={() => window.open(`/algorithm/${app.id}`, '_blank')}
                         >
+                          <Eye className="h-4 w-4 mr-1" />
                           查看详情
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
+      {/* 评审分配对话框 */}
+      <ReviewAssignmentDialog
+        open={isReviewAssignmentOpen}
+        onOpenChange={setIsReviewAssignmentOpen}
+        algorithmName={selectedAlgorithm?.name || ''}
+        algorithmId={selectedAlgorithm?.id || ''}
+        onAssign={handleAssignReviewers}
+      />
+
+      {/* 评审结果对话框 */}
+      <ReviewResultDialog
+        open={isReviewResultOpen}
+        onOpenChange={setIsReviewResultOpen}
+        algorithmName={selectedAlgorithm?.name || ''}
+        algorithmId={selectedAlgorithm?.id || ''}
+        reviewerId={currentUser.id}
+        reviewerName={currentUser.name}
+        onSubmit={handleSubmitReviewResult}
+      />
     </div>
   );
-}
+};
+
+export default ApprovalCenter;

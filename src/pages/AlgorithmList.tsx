@@ -153,7 +153,7 @@ export default function AlgorithmList() {
   const statsData = {
     total: mockAlgorithms.length,
     live: mockAlgorithms.filter(a => a.status === 'live').length,
-    inDevelopment: mockAlgorithms.filter(a => a.status === 'in_development').length,
+    inDevelopment: mockAlgorithms.filter(a => a.status === 'pending_frontend').length,
     totalCalls: mockAlgorithms.reduce((sum, a) => sum + (a.callCount || 0), 0)
   };
 

@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Filter, X, ChevronDown } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Search, Filter, X, ChevronDown, HelpCircle } from 'lucide-react';
 import { FilterOptions, AlgorithmStatus } from '@/types/algorithm';
 import { categories, allTags } from '@/data/mockData';
 import { cn } from '@/lib/utils';
@@ -165,20 +166,47 @@ export function SearchFilter({ filters, onFiltersChange, className }: SearchFilt
         </Popover>
 
         {/* Status Filter */}
-        <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="状态" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部状态</SelectItem>
-            <SelectItem value="live">已上线</SelectItem>
-            <SelectItem value="in_development">开发中</SelectItem>
-            <SelectItem value="approved">已通过</SelectItem>
-            <SelectItem value="pending_review">待评审</SelectItem>
-            <SelectItem value="draft">草稿</SelectItem>
-            <SelectItem value="deprecated">已下线</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="live">已上线</SelectItem>
+              <SelectItem value="pending_frontend">待前端</SelectItem>
+              <SelectItem value="pending_product">待产品</SelectItem>
+              <SelectItem value="pending_confirmation">待确认</SelectItem>
+              <SelectItem value="under_review">评审中</SelectItem>
+              <SelectItem value="pending_review">待评审</SelectItem>
+              <SelectItem value="draft">草稿</SelectItem>
+              <SelectItem value="deprecated">已下线</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-sm p-4">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium mb-2">算法状态说明：</div>
+                  <div className="space-y-1 text-xs">
+                    <div><strong>草稿：</strong>未提交或被打回修改</div>
+                    <div><strong>待评审：</strong>已提交，等待组长发起评审</div>
+                    <div><strong>评审中：</strong>评审人正在评审</div>
+                    <div><strong>待确认：</strong>评审完成，等待组长确认</div>
+                    <div><strong>待产品：</strong>组长确认通过，等待产品转化</div>
+                    <div><strong>待前端：</strong>产品完成，等待前端实现</div>
+                    <div><strong>已上线：</strong>前端完成，正式开放</div>
+                    <div><strong>已下线：</strong>手动或自动下线</div>
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
         {/* Sort Filter */}
         <Select value={filters.sortBy} onValueChange={handleSortChange}>

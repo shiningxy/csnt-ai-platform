@@ -13,6 +13,7 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --primary-hover: 210 100% 50%;
     --primary-light: 210 100% 95%;
+    --primary-rgb: 24, 144, 255; /* RGB equivalent for rgba usage */
     
     /* Success & Status Colors */
     --success: 135 60% 50%; /* #52c41a - 成功绿 */
@@ -90,6 +91,15 @@ All colors MUST be HSL.
     --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1);
     
+    /* Enhanced Glow Effects */
+    --glow-primary: 0 0 20px hsl(var(--primary) / 0.3);
+    --glow-primary-strong: 0 0 40px hsl(var(--primary) / 0.4);
+    --glow-card: 0 8px 32px hsl(var(--primary) / 0.12);
+    
+    /* Card Effects */
+    --card-glow: 0 0 30px hsl(var(--primary) / 0.15);
+    --card-glow-hover: 0 0 50px hsl(var(--primary) / 0.25);
+    
     /* Animations */
     --transition-all: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -101,6 +111,7 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --primary-hover: 210 100% 50%;
     --primary-light: 210 100% 15%;
+    --primary-rgb: 24, 144, 255; /* RGB equivalent for rgba usage */
     
     --success: 135 60% 50%;
     --success-foreground: 0 0% 100%;

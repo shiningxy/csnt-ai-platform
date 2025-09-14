@@ -8,6 +8,7 @@ import AlgorithmList from "./pages/AlgorithmList";
 import AlgorithmDetail from "./pages/AlgorithmDetail";
 import ApprovalCenter from "./pages/ApprovalCenter";
 import AdminPanel from "./pages/AdminPanel";
+import AlgorithmApply from "./pages/AlgorithmApply";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/algorithm/:id" element={<AlgorithmDetail />} />
             <Route path="/approval" element={<ApprovalCenter />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/apply" element={<AlgorithmApply />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +43,7 @@ const roles = [
 
 export default function AdminPanel() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -210,7 +211,7 @@ export default function AdminPanel() {
           <TabsContent value="drafts" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">我的草稿</h2>
-              <Button>
+              <Button onClick={() => navigate('/apply')}>
                 <Plus className="h-4 w-4 mr-2" />
                 新建草稿
               </Button>

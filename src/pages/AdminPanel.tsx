@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { DraftStorage } from "@/lib/storage";
+import { format } from "date-fns";
 
 // Mock data
 const notifications = [
@@ -20,12 +22,6 @@ const notifications = [
   { id: 2, type: "algorithm", title: "新算法待审核", message: "用户张三提交了新的排序算法", time: "1小时前", read: false },
   { id: 3, type: "user", title: "用户注册", message: "新用户李四已注册", time: "2小时前", read: true },
   { id: 4, type: "security", title: "安全警告", message: "检测到异常登录行为", time: "3小时前", read: false },
-];
-
-const drafts = [
-  { id: 1, title: "快速排序算法优化", category: "排序算法", lastModified: "2024-01-15", status: "草稿" },
-  { id: 2, title: "机器学习推荐系统", category: "推荐算法", lastModified: "2024-01-14", status: "草稿" },
-  { id: 3, title: "图像识别优化方案", category: "计算机视觉", lastModified: "2024-01-13", status: "草稿" },
 ];
 
 const users = [
@@ -46,6 +42,7 @@ export default function AdminPanel() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
+  const [drafts, setDrafts] = useState(() => DraftStorage.getAllDrafts());
 
   // 处理URL参数来切换tab
   useEffect(() => {
@@ -57,6 +54,23 @@ export default function AdminPanel() {
       console.log('设置activeTab为:', tab); // 添加调试信息
     }
   }, [location.search]);
+
+  // 刷新草稿列表
+  const refreshDrafts = () => {
+    setDrafts(DraftStorage.getAllDrafts());
+  };
+
+  // 删除草稿
+  const handleDeleteDraft = (draftId: string) => {
+    if (DraftStorage.deleteDraft(draftId)) {
+      refreshDrafts();
+    }
+  };
+
+  // 编辑草稿
+  const handleEditDraft = (draftId: string) => {
+    navigate(`/apply?draft=${draftId}`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,33 +232,60 @@ export default function AdminPanel() {
             </div>
 
             <div className="grid gap-4">
-              {drafts.map((draft) => (
-                <Card key={draft.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{draft.title}</h3>
-                        <div className="flex items-center gap-4 mt-1">
-                          <Badge variant="outline">{draft.category}</Badge>
-                          <span className="text-sm text-muted-foreground">最后修改: {draft.lastModified}</span>
-                          <Badge variant="secondary">{draft.status}</Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+              {drafts.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">暂无草稿</h3>
+                    <p className="text-muted-foreground mb-4">您还没有保存任何算法申请草稿</p>
+                    <Button onClick={() => navigate('/apply')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      创建新申请
+                    </Button>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                drafts.map((draft) => (
+                  <Card key={draft.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{draft.name || '未命名算法'}</h3>
+                          <div className="flex items-center gap-4 mt-1">
+                            <Badge variant="outline">{draft.category || '未分类'}</Badge>
+                            <span className="text-sm text-muted-foreground">
+                              最后修改: {format(new Date(draft.updatedAt), "yyyy-MM-dd HH:mm")}
+                            </span>
+                            <Badge variant="secondary">草稿</Badge>
+                          </div>
+                          {draft.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {draft.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditDraft(draft.id)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteDraft(draft.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
 

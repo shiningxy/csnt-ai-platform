@@ -1,4 +1,4 @@
-export type AlgorithmStatus = 'draft' | 'pending_review' | 'approved' | 'in_development' | 'live' | 'deprecated';
+export type AlgorithmStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'conditional' | 'in_development' | 'live' | 'deprecated';
 
 export type UserRole = 'algorithm_engineer' | 'team_lead' | 'product_manager' | 'frontend_engineer' | 'business_user' | 'admin';
 

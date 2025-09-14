@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { AlgorithmAsset, ApprovalRecord, UserRole } from "@/types/algorithm";
 import { mockUsers } from "@/data/mockData";
+import { ApplicationStorage, SubmittedApplication } from "@/lib/storage";
 
 // Mock pending approval data
 const mockPendingApprovals: AlgorithmAsset[] = [
@@ -90,6 +91,11 @@ export default function ApprovalCenter() {
   const { toast } = useToast();
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmAsset | null>(null);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [pendingApplications, setPendingApplications] = useState<(AlgorithmAsset | SubmittedApplication)[]>(() => {
+    // 合并静态数据和动态数据
+    const dynamicApps = ApplicationStorage.getPendingApplications();
+    return [...mockPendingApprovals, ...dynamicApps];
+  });
   const [approvalForm, setApprovalForm] = useState<ApprovalFormData>({
     needMeeting: false,
     meetingDate: undefined,
@@ -167,6 +173,18 @@ export default function ApprovalCenter() {
       ...approvalForm
     });
 
+    // 更新申请状态（只对动态申请有效）
+    if (selectedAlgorithm.id.startsWith('app_')) {
+      const newStatus = approvalForm.conclusion === "approved" ? "approved" : 
+                       approvalForm.conclusion === "conditional" ? "conditional" : "rejected";
+      
+      ApplicationStorage.updateApplicationStatus(selectedAlgorithm.id, newStatus);
+    }
+    
+    // 刷新待审批列表
+    const dynamicApps = ApplicationStorage.getPendingApplications();
+    setPendingApplications([...mockPendingApprovals, ...dynamicApps]);
+
     toast({
       title: "审批提交成功",
       description: `已成功提交对"${selectedAlgorithm.name}"的审批结果`
@@ -202,7 +220,7 @@ export default function ApprovalCenter() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">待审批</p>
-                <p className="text-2xl font-bold text-warning">{mockPendingApprovals.length}</p>
+                <p className="text-2xl font-bold text-warning">{pendingApplications.length}</p>
               </div>
               <Clock className="h-8 w-8 text-warning" />
             </div>
@@ -252,7 +270,7 @@ export default function ApprovalCenter() {
           <CardTitle>待审批算法列表</CardTitle>
         </CardHeader>
         <CardContent>
-          {mockPendingApprovals.length === 0 ? (
+          {pendingApplications.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">暂无待审批项目</h3>
@@ -271,7 +289,7 @@ export default function ApprovalCenter() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockPendingApprovals.map((algorithm) => (
+                {pendingApplications.map((algorithm) => (
                   <TableRow key={algorithm.id}>
                     <TableCell>
                       <div>
@@ -306,10 +324,10 @@ export default function ApprovalCenter() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleOpenApproval(algorithm)}
-                            >
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleOpenApproval(algorithm as AlgorithmAsset)}
+                          >
                               评审
                             </Button>
                           </DialogTrigger>

@@ -18,6 +18,7 @@ import { CodeBlock } from '@/components/ui/code-block';
 import { ArrowLeft, ArrowRight, Save, Send, Upload, FileText, Code, Settings, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { DraftStorage, ApplicationStorage } from '@/lib/storage';
 
 const algorithmApplySchema = z.object({
   // 基础信息
@@ -181,20 +182,60 @@ window.algorithmConfig = {
 
   const onSubmit = (data: AlgorithmApplyFormData) => {
     console.log('提交数据:', data);
-    toast({
-      title: "申请已提交",
-      description: "您的算法申请已成功提交，我们会在5个工作日内完成评审。",
-    });
-    navigate('/admin?tab=drafts');
+    
+    try {
+      // 提交申请到审批中心
+      const appId = ApplicationStorage.submitApplication({
+        name: data.name,
+        category: data.category,
+        subCategory: data.subCategory,
+        tags: data.tags,
+        description: data.description,
+        applicableScenarios: data.applicableScenarios,
+        targetUsers: data.targetUsers,
+        interactionMethod: data.interactionMethod,
+        inputDataSource: data.inputDataSource,
+        inputDataType: data.inputDataType,
+        outputSchema: data.outputSchema,
+        resourceRequirements: data.resourceRequirements,
+        deploymentMethod: data.deploymentMethod,
+        preprocessing: data.preprocessing,
+        featureEngineering: data.featureEngineering,
+        modelStructure: data.modelStructure,
+        postProcessing: data.postProcessing,
+        exceptionHandling: data.exceptionHandling,
+      });
+      
+      toast({
+        title: "申请已提交",
+        description: "您的算法申请已成功提交，我们会在5个工作日内完成评审。",
+      });
+      navigate('/approval');
+    } catch (error) {
+      toast({
+        title: "提交失败",
+        description: "提交申请时出现错误，请重试。",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveDraft = () => {
-    const currentData = form.getValues();
-    localStorage.setItem('algorithm_draft', JSON.stringify(currentData));
-    toast({
-      title: "草稿已保存",
-      description: "您的申请已保存为草稿，可以稍后继续编辑。",
-    });
+    try {
+      const currentData = form.getValues();
+      const draftId = DraftStorage.saveDraft(currentData);
+      
+      toast({
+        title: "草稿已保存",
+        description: "您的申请已保存为草稿，可以稍后继续编辑。",
+      });
+    } catch (error) {
+      toast({
+        title: "保存失败",
+        description: "保存草稿时出现错误，请重试。",
+        variant: "destructive",
+      });
+    }
   };
 
   const nextStep = () => {

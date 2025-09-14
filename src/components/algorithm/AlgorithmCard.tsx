@@ -142,11 +142,11 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
       <CardFooter className="pt-0">
         <div className="flex w-full space-x-2">
           {buttonAvailability.showDemo && (
-            <Link to={`/algorithm/${algorithm.id}/demo`}>
+            <Link to={`/algorithm/${algorithm.id}/demo`} className="flex-1">
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 transition-all duration-300 hover:scale-105"
+                className="w-full transition-all duration-300 hover:scale-105"
               >
                 <Play className="h-3 w-3 mr-1" />
                 查看展示效果

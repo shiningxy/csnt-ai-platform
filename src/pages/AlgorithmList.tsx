@@ -194,6 +194,7 @@ export default function AlgorithmList() {
                 speed={100}
                 sequential={true}
                 revealDirection="start"
+                useOriginalCharsOnly={true}
                 className="text-white"
                 encryptedClassName="text-white/50"
               />
@@ -205,6 +206,7 @@ export default function AlgorithmList() {
                 speed={80}
                 sequential={true}
                 revealDirection="start"
+                useOriginalCharsOnly={true}
                 className="text-white/90"
                 encryptedClassName="text-white/40"
               />

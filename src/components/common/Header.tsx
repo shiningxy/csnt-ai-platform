@@ -22,16 +22,9 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { NotificationManager } from '@/components/notifications/notification-manager';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useHeaderTheme } from '@/hooks/use-header-theme';
+import { useUser } from '@/hooks/useUser';
 
-// Mock current user - in real app this would come from auth context
-const currentUser = {
-  id: '1',
-  name: '张三',
-  role: 'admin' as const, // Changed to admin to show admin features
-  email: 'zhangsan@company.com',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zhangsan'
-};
-
+// Navigation items configuration
 const navigationItems = [
   { label: '算法库', href: '/', roles: ['all'] },
   { label: '审批中心', href: '/approval', roles: ['team_lead', 'admin'] },
@@ -43,6 +36,7 @@ export function Header() {
   const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
+  const { user: currentUser } = useUser();
   
   // Get dynamic header theme styles
   const { 

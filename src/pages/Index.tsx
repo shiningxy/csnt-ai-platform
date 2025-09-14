@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Code, Zap, Layers } from "lucide-react";
+import { ArrowRight, Code, Zap, Layers, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Silk from "@/components/effects/Silk";
+import { useStats } from "@/hooks/useStats";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { stats, loading } = useStats();
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,6 +80,46 @@ const Index = () => {
                 <p className="text-muted-foreground">团队协作与知识分享社区</p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+
+        {/* Scroll Down Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="flex flex-col items-center gap-2 text-foreground/70">
+            <span className="text-sm font-medium">向下滚动了解更多</span>
+            <ChevronDown className="h-5 w-5" />
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 px-4 bg-muted/50">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                {loading ? '--' : stats.totalAlgorithms}
+              </div>
+              <div className="text-sm text-muted-foreground">总算法数</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                {loading ? '--' : stats.onlineAlgorithms}
+              </div>
+              <div className="text-sm text-muted-foreground">已上线</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                {loading ? '--' : stats.developingAlgorithms}
+              </div>
+              <div className="text-sm text-muted-foreground">开发中</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                {loading ? '--' : stats.totalCalls.toLocaleString()}
+              </div>
+              <div className="text-sm text-muted-foreground">总调用数</div>
+            </div>
           </div>
         </div>
       </section>

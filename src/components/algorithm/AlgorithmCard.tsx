@@ -28,14 +28,26 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
 
-  const handleCopyCall = () => {
-    if (algorithm.apiExample) {
-      navigator.clipboard.writeText(algorithm.apiExample);
-      toast({
-        title: "调用示例已复制",
-        description: "API调用代码已复制到剪贴板",
-      });
-    }
+  const generateApiExample = () => {
+    return `// 示例：调用${algorithm.name}
+fetch('https://api.example.com/algorithms/${algorithm.id}/invoke', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer <YOUR_API_KEY>'
+  },
+  body: JSON.stringify({ input: {} })
+}).then(res => res.json()).then(console.log).catch(console.error);
+`;
+  };
+
+  const handleCopyCall = async () => {
+    const code = (algorithm.apiExample?.trim()) || generateApiExample();
+    await navigator.clipboard.writeText(code);
+    toast({
+      title: "调用示例已复制",
+      description: "API调用代码已复制到剪贴板",
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -162,7 +174,7 @@ export function AlgorithmCard({ algorithm, className }: AlgorithmCardProps) {
             </Button>
           )}
           
-          {buttonAvailability.showCopy && algorithm.apiExample && (
+          {buttonAvailability.showCopy && (
             <Button
               variant="outline"
               size="sm"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database, Copy } from "lucide-react";
+import { Bell, User, FileText, Shield, Settings, ChevronDown, Search, Filter, MoreVertical, Edit, Trash2, Eye, Plus, Users, Key, Lock, Database, Copy, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { PasswordChangeDialog } from "@/components/security/password-change-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
+import { supabase } from "@/integrations/supabase/client";
 
 const users = [
   { id: 1, name: "张三", email: "zhangsan@example.com", role: "管理员", status: "活跃", lastLogin: "2024-01-15 14:30" },
@@ -32,6 +33,25 @@ const roles = [
   { id: 3, name: "编辑", permissions: 8, users: 5, description: "可以编辑内容" },
   { id: 4, name: "用户", permissions: 3, users: 128, description: "基础用户权限" },
 ];
+
+// API Key types
+interface ApiKey {
+  id: string;
+  name: string;
+  key_value: string;
+  permissions: string;
+  expires_at?: string;
+  description?: string; 
+  is_active: boolean;
+  last_used_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Generate API key in sk-UUID format (without dashes)
+const generateApiKey = (): string => {
+  return 'sk-' + crypto.randomUUID().replace(/-/g, '');
+};
 
 export default function AdminPanel() {
   const location = useLocation();
@@ -49,6 +69,16 @@ export default function AdminPanel() {
     role: "超级管理员"
   });
 
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newKeyData, setNewKeyData] = useState({
+    name: '',
+    permissions: '',
+    expires_at: '',
+    description: ''
+  });
+
   // 处理URL参数来切换tab
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -59,6 +89,30 @@ export default function AdminPanel() {
       console.log('设置activeTab为:', tab); // 添加调试信息
     }
   }, [location.search]);
+
+  // Load API keys
+  useEffect(() => {
+    loadApiKeys();
+  }, []);
+
+  const loadApiKeys = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setApiKeys(data || []);
+    } catch (error) {
+      console.error('Failed to load API keys:', error);
+      toast({
+        title: "加载失败",
+        description: "无法加载API密钥列表",
+        variant: "destructive",
+      });
+    }
+  };
 
   // 刷新草稿列表
   const refreshDrafts = () => {
@@ -110,6 +164,117 @@ export default function AdminPanel() {
       title: "删除成功",
       description: "通知已删除",
     });
+  };
+
+  // API Key management functions
+  const handleCreateApiKey = async () => {
+    if (!newKeyData.name || !newKeyData.permissions) {
+      toast({
+        title: "创建失败",
+        description: "请填写必要的字段",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const keyValue = generateApiKey();
+      let expiresAt = null;
+      
+      if (newKeyData.expires_at && newKeyData.expires_at !== 'never') {
+        const now = new Date();
+        switch (newKeyData.expires_at) {
+          case '30d':
+            expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '90d':
+            expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '1y':
+            expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+        }
+      }
+
+      const { error } = await supabase
+        .from('api_keys')
+        .insert({
+          name: newKeyData.name,
+          key_value: keyValue,
+          permissions: newKeyData.permissions,
+          expires_at: expiresAt,
+          description: newKeyData.description || null
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "创建成功",
+        description: `API密钥 "${newKeyData.name}" 已创建`,
+      });
+
+      setIsCreateDialogOpen(false);
+      setNewKeyData({ name: '', permissions: '', expires_at: '', description: '' });
+      loadApiKeys();
+    } catch (error) {
+      console.error('Failed to create API key:', error);
+      toast({
+        title: "创建失败",
+        description: "无法创建API密钥",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRegenerateApiKey = async (keyId: string, keyName: string) => {
+    try {
+      const newKeyValue = generateApiKey();
+      const { error } = await supabase
+        .from('api_keys')
+        .update({ key_value: newKeyValue })
+        .eq('id', keyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "重新生成成功",
+        description: `${keyName} 密钥已重新生成`,
+      });
+
+      loadApiKeys();
+    } catch (error) {
+      console.error('Failed to regenerate API key:', error);
+      toast({
+        title: "重新生成失败",
+        description: "无法重新生成API密钥",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteApiKey = async (keyId: string, keyName: string) => {
+    try {
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', keyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "删除成功",
+        description: `${keyName} 已删除`,
+      });
+
+      loadApiKeys();
+    } catch (error) {
+      console.error('Failed to delete API key:', error);
+      toast({
+        title: "删除失败",
+        description: "无法删除API密钥",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -544,7 +709,7 @@ export default function AdminPanel() {
           <TabsContent value="api-keys" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">API密钥管理</h2>
-              <Dialog>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -561,11 +726,18 @@ export default function AdminPanel() {
                   <div className="space-y-4">
                     <div>
                       <Label>密钥名称</Label>
-                      <Input placeholder="例如：生产环境密钥" />
+                      <Input 
+                        placeholder="例如：生产环境密钥" 
+                        value={newKeyData.name}
+                        onChange={(e) => setNewKeyData(prev => ({ ...prev, name: e.target.value }))}
+                      />
                     </div>
                     <div>
                       <Label>权限范围</Label>
-                      <Select>
+                      <Select 
+                        value={newKeyData.permissions} 
+                        onValueChange={(value) => setNewKeyData(prev => ({ ...prev, permissions: value }))}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="选择权限范围" />
                         </SelectTrigger>
@@ -578,7 +750,10 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <Label>到期时间</Label>
-                      <Select>
+                      <Select 
+                        value={newKeyData.expires_at} 
+                        onValueChange={(value) => setNewKeyData(prev => ({ ...prev, expires_at: value }))}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="选择到期时间" />
                         </SelectTrigger>
@@ -592,30 +767,14 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <Label>备注</Label>
-                      <Textarea placeholder="密钥用途说明..." />
+                      <Textarea 
+                        placeholder="密钥用途说明..." 
+                        value={newKeyData.description}
+                        onChange={(e) => setNewKeyData(prev => ({ ...prev, description: e.target.value }))}
+                      />
                     </div>
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          // Close dialog logic would go here
-                          toast({
-                            title: "已取消",
-                            description: "已取消创建API密钥",
-                          });
-                        }}
-                      >
-                        取消
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          // Create API key logic would go here
-                          toast({
-                            title: "创建成功",
-                            description: "API密钥已创建，请妥善保管",
-                          });
-                        }}
-                      >
+                    <div className="flex justify-end">
+                      <Button onClick={handleCreateApiKey}>
                         创建密钥
                       </Button>
                     </div>
@@ -629,29 +788,29 @@ export default function AdminPanel() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>API密钥列表</span>
-                    <Badge variant="secondary">3个有效密钥</Badge>
+                    <Badge variant="secondary">{apiKeys.filter(key => key.is_active).length}个有效密钥</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { name: '生产环境密钥', key: 'pk_live_1234567890abcdef', status: '活跃', expires: '2025-06-15', lastUsed: '2小时前' },
-                    { name: '测试环境密钥', key: 'pk_test_abcdef1234567890', status: '活跃', expires: '2025-03-20', lastUsed: '1天前' },
-                    { name: '开发环境密钥', key: 'pk_dev_1234567890abcdef', status: '已停用', expires: '2025-12-31', lastUsed: '7天前' }
-                  ].map((apiKey, index) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                  {apiKeys.map((apiKey) => (
+                    <div key={apiKey.id} className="border rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium">{apiKey.name}</h3>
                           <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant={apiKey.status === '活跃' ? 'default' : 'secondary'}>
-                              {apiKey.status}
+                            <Badge variant={apiKey.is_active ? 'default' : 'secondary'}>
+                              {apiKey.is_active ? '活跃' : '已停用'}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              到期：{apiKey.expires}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              最后使用：{apiKey.lastUsed}
-                            </span>
+                            {apiKey.expires_at && (
+                              <span className="text-xs text-muted-foreground">
+                                到期：{format(new Date(apiKey.expires_at), "yyyy-MM-dd")}
+                              </span>
+                            )}
+                            {apiKey.last_used_at && (
+                              <span className="text-xs text-muted-foreground">
+                                最后使用：{format(new Date(apiKey.last_used_at), "yyyy-MM-dd HH:mm")}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <DropdownMenu>
@@ -662,35 +821,16 @@ export default function AdminPanel() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
                             <DropdownMenuItem
-                              onClick={() => {
-                                toast({
-                                  title: "查看详情",
-                                  description: `查看 ${apiKey.name} 的详细信息`,
-                                });
-                              }}
+                              onClick={() => handleRegenerateApiKey(apiKey.id, apiKey.name)}
                             >
-                              查看详情
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                toast({
-                                  title: "重新生成",
-                                  description: `${apiKey.name} 密钥已重新生成`,
-                                });
-                              }}
-                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
                               重新生成
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
-                              onClick={() => {
-                                toast({
-                                  title: "删除成功",
-                                  description: `${apiKey.name} 已删除`,
-                                  variant: "destructive",
-                                });
-                              }}
+                              onClick={() => handleDeleteApiKey(apiKey.id, apiKey.name)}
                             >
+                              <Trash2 className="h-4 w-4 mr-2" />
                               删除
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -699,12 +839,12 @@ export default function AdminPanel() {
                       
                       <div className="bg-muted rounded-md p-3">
                         <div className="flex items-center justify-between">
-                          <code className="text-sm font-mono">{apiKey.key}****</code>
+                          <code className="text-sm font-mono">{apiKey.key_value.substring(0, 16)}****</code>
                           <Button 
                             variant="ghost" 
                             size="sm"
                             onClick={() => {
-                              navigator.clipboard.writeText(apiKey.key);
+                              navigator.clipboard.writeText(apiKey.key_value);
                               toast({
                                 title: "已复制",
                                 description: "API密钥已复制到剪贴板",
@@ -718,12 +858,20 @@ export default function AdminPanel() {
                       
                       <div className="text-xs text-muted-foreground">
                         <div className="grid grid-cols-2 gap-4">
-                          <div>权限：读写权限</div>
-                          <div>创建时间：{new Date().toLocaleDateString()}</div>
+                          <div>权限：{apiKey.permissions === 'read' ? '只读权限' : apiKey.permissions === 'write' ? '读写权限' : '管理员权限'}</div>
+                          <div>创建时间：{format(new Date(apiKey.created_at), "yyyy-MM-dd")}</div>
                         </div>
+                        {apiKey.description && (
+                          <div className="mt-2">备注：{apiKey.description}</div>
+                        )}
                       </div>
                     </div>
                   ))}
+                  {apiKeys.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      暂无API密钥，点击"创建新密钥"开始使用
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

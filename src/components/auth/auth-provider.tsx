@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // 获取用户档案
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retries = 3) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -41,17 +41,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile:', error);
+        // 如果是权限问题或用户不存在，不要重试
+        if (error.code === 'PGRST116' || error.message.includes('permission')) {
+          return;
+        }
+        // 对于其他错误，重试
+        if (retries > 0) {
+          setTimeout(() => fetchProfile(userId, retries - 1), 1000);
+          return;
+        }
         return;
       }
 
       setProfile(data as Profile);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      if (retries > 0) {
+        setTimeout(() => fetchProfile(userId, retries - 1), 1000);
+      }
     }
   };
 
   // 创建用户档案
-  const createProfile = async (user: User) => {
+  const createProfile = async (user: User, retries = 3) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -67,12 +79,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error creating profile:', error);
+        // 如果是唯一约束违反（用户已存在），尝试获取现有档案
+        if (error.code === '23505') {
+          setTimeout(() => fetchProfile(user.id), 500);
+          return;
+        }
+        // 对于其他错误，重试
+        if (retries > 0) {
+          setTimeout(() => createProfile(user, retries - 1), 1000);
+          return;
+        }
         return;
       }
 
       setProfile(data as Profile);
     } catch (error) {
       console.error('Error creating profile:', error);
+      if (retries > 0) {
+        setTimeout(() => createProfile(user, retries - 1), 1000);
+      }
     }
   };
 
@@ -86,18 +111,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           // 用户登录，获取或创建档案
           setTimeout(async () => {
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
+            try {
+              const { data: existingProfile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .single();
 
-            if (existingProfile) {
-              setProfile(existingProfile as Profile);
-            } else {
-              await createProfile(session.user);
+              if (existingProfile) {
+                setProfile(existingProfile as Profile);
+              } else if (error?.code === 'PGRST116') {
+                // 用户档案不存在，创建新档案
+                await createProfile(session.user);
+              } else if (error) {
+                console.error('Profile fetch error:', error);
+                // 如果获取失败但不是因为不存在，稍后重试
+                setTimeout(() => fetchProfile(session.user.id), 2000);
+              }
+            } catch (error) {
+              console.error('Profile operation error:', error);
+            } finally {
+              setLoading(false);
             }
-            setLoading(false);
           }, 0);
         } else {
           // 用户登出

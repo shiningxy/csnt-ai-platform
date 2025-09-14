@@ -318,11 +318,13 @@ export default function Auth() {
             </Tabs>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>测试账户：</p>
-              <div className="grid grid-cols-1 gap-1 mt-2 text-xs">
-                <p>管理员: admin@test.com / password123</p>
-                <p>团队负责人: lead@test.com / password123</p>
-                <p>算法工程师: engineer@test.com / password123</p>
+              <div className="p-4 bg-muted/30 rounded-lg border">
+                <h3 className="text-sm font-medium mb-2 text-foreground">安全提示</h3>
+                <div className="space-y-1 text-xs">
+                  <div>• 请使用安全的密码，至少6个字符</div>
+                  <div>• 注册后请检查邮箱确认链接</div>
+                  <div>• 保护好您的账户信息，不要与他人分享</div>
+                </div>
               </div>
             </div>
           </CardContent>

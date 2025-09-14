@@ -165,9 +165,9 @@ export default function AlgorithmList() {
         {/* Silk Background */}
         <div className="absolute inset-0 z-0">
           <Silk
-            speed={5}
+            speed={6}
             scale={1}
-            color="#7B7481"
+            color="#409eff"
             noiseIntensity={1.5}
             rotation={0}
           />

@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { DraftStorage } from "@/lib/storage";
 import { format } from "date-fns";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { PasswordChangeDialog } from "@/components/security/password-change-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useDrafts } from "@/hooks/useDrafts";
 import { supabase } from "@/integrations/supabase/client";
 
 const users = [
@@ -59,8 +59,12 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
-  const [drafts, setDrafts] = useState(() => DraftStorage.getAllDrafts());
-  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
+  
+  // Mock current user ID - in real app, this would come from auth context
+  const currentUserId = "mock-user-id";
+  
+  const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications(currentUserId);
+  const { drafts, deleteDraft } = useDrafts(currentUserId);
   const [currentUser, setCurrentUser] = useState({
     name: "系统管理员",
     email: "admin@example.com",
@@ -114,16 +118,15 @@ export default function AdminPanel() {
     }
   };
 
-  // 刷新草稿列表
-  const refreshDrafts = () => {
-    setDrafts(DraftStorage.getAllDrafts());
-  };
+  // 刷新草稿列表 - 不再需要，使用hooks自动更新
 
   // 删除草稿
   const handleDeleteDraft = (draftId: string) => {
-    if (DraftStorage.deleteDraft(draftId)) {
-      refreshDrafts();
-    }
+    deleteDraft(draftId);
+    toast({
+      title: "删除成功",
+      description: "草稿已删除",
+    });
   };
 
   // 编辑草稿
@@ -154,11 +157,11 @@ export default function AdminPanel() {
     });
   };
 
-  const handleMarkAsRead = (id: number) => {
+  const handleMarkAsRead = (id: string) => {
     markAsRead(id);
   };
 
-  const handleDeleteNotification = (id: number) => {
+  const handleDeleteNotification = (id: string) => {
     deleteNotification(id);
     toast({
       title: "删除成功",
@@ -324,14 +327,14 @@ export default function AdminPanel() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-semibold">消息通知</h2>
-                {unreadCount > 0 && (
+                {notifications.filter(n => !n.is_read).length > 0 && (
                   <Badge variant="destructive" className="text-xs">
-                    {unreadCount} 条未读
+                    {notifications.filter(n => !n.is_read).length} 条未读
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
+                {notifications.filter(n => !n.is_read).length > 0 && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -360,15 +363,15 @@ export default function AdminPanel() {
                   notification.message.toLowerCase().includes(searchTerm.toLowerCase())
                 )
                 .map((notification) => (
-                <Card key={notification.id} className={`transition-all group ${!notification.read ? 'border-primary/50 bg-primary-light/30' : ''}`}>
+                <Card key={notification.id} className={`transition-all group ${!notification.is_read ? 'border-primary/50 bg-primary-light/30' : ''}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${!notification.read ? 'bg-primary' : 'bg-muted'}`} />
+                        <div className={`w-2 h-2 rounded-full ${!notification.is_read ? 'bg-primary' : 'bg-muted'}`} />
                         <div>
                           <h3 className="font-medium">{notification.title}</h3>
                           <p className="text-sm text-muted-foreground">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{format(new Date(notification.created_at), "yyyy-MM-dd HH:mm")}</p>
                         </div>
                       </div>
                       <DropdownMenu>
@@ -378,7 +381,7 @@ export default function AdminPanel() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          {!notification.read && (
+                          {!notification.is_read && (
                             <DropdownMenuItem onClick={() => handleMarkAsRead(notification.id)}>
                               标记为已读
                             </DropdownMenuItem>
@@ -502,15 +505,15 @@ export default function AdminPanel() {
                         <div>
                           <h3 className="font-medium">{draft.name || '未命名算法'}</h3>
                           <div className="flex items-center gap-4 mt-1">
-                            <Badge variant="outline">{draft.category || '未分类'}</Badge>
+                            <Badge variant="outline">{draft.data?.category || '未分类'}</Badge>
                             <span className="text-sm text-muted-foreground">
-                              最后修改: {format(new Date(draft.updatedAt), "yyyy-MM-dd HH:mm")}
+                              最后修改: {format(new Date(draft.updated_at), "yyyy-MM-dd HH:mm")}
                             </span>
                             <Badge variant="secondary">草稿</Badge>
                           </div>
-                          {draft.description && (
+                          {draft.data?.description && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {draft.description}
+                              {draft.data.description}
                             </p>
                           )}
                         </div>

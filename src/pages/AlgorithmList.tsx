@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/pagination';
 import { Plus, Brain, TrendingUp } from 'lucide-react';
 import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
-import { mockAlgorithms } from '@/data/mockData';
+import { useAlgorithms } from '@/hooks/useAlgorithms';
 import { DraftStorage, ApplicationStorage } from '@/lib/storage';
 import Silk from '@/components/effects/Silk';
 import DecryptedText from '@/components/ui/decrypted-text';
@@ -24,6 +24,7 @@ const ITEMS_PER_PAGE = 9;
 const currentUserRole: 'admin' | 'algorithm_engineer' | 'team_lead' = 'admin'; // This would come from auth context
 
 export default function AlgorithmList() {
+  const { algorithms: dbAlgorithms, loading } = useAlgorithms();
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     category: '',
@@ -91,7 +92,7 @@ export default function AlgorithmList() {
       popularity: app.popularity || 0,
     }));
     
-    let filtered = [...mockAlgorithms, ...drafts, ...submitted];
+    let filtered = [...dbAlgorithms, ...drafts, ...submitted];
 
     // Search filter
     if (filters.search) {
@@ -153,10 +154,10 @@ export default function AlgorithmList() {
   };
 
   const statsData = {
-    total: mockAlgorithms.length,
-    live: mockAlgorithms.filter(a => a.status === 'live').length,
-    inDevelopment: mockAlgorithms.filter(a => a.status === 'pending_frontend').length,
-    totalCalls: mockAlgorithms.reduce((sum, a) => sum + (a.callCount || 0), 0)
+    total: dbAlgorithms.length,
+    live: dbAlgorithms.filter(a => a.status === 'live').length,
+    inDevelopment: dbAlgorithms.filter(a => a.status === 'pending_frontend').length,
+    totalCalls: dbAlgorithms.reduce((sum, a) => sum + (a.callCount || 0), 0)
   };
 
   return (
@@ -276,7 +277,14 @@ export default function AlgorithmList() {
         </div>
 
         {/* Algorithm Grid */}
-        {paginatedAlgorithms.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-16">
+            <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50 animate-pulse" />
+            <h3 className="text-xl font-semibold text-muted-foreground mb-2">
+              正在加载算法...
+            </h3>
+          </div>
+        ) : paginatedAlgorithms.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {paginatedAlgorithms.map((algorithm) => (
               <AlgorithmCard key={algorithm.id} algorithm={algorithm} />

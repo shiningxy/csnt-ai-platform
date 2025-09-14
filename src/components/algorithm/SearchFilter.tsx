@@ -37,14 +37,14 @@ export function SearchFilter({ filters, onFiltersChange, className }: SearchFilt
   const handleCategoryChange = (value: string) => {
     const newFilters = { 
       ...filters, 
-      category: value,
+      category: value === 'all' ? '' : value,
       subCategory: '' // Reset subcategory when category changes
     };
     onFiltersChange(newFilters);
   };
 
   const handleSubCategoryChange = (value: string) => {
-    onFiltersChange({ ...filters, subCategory: value });
+    onFiltersChange({ ...filters, subCategory: value === 'all' ? '' : value });
   };
 
   const handleStatusChange = (value: string) => {
@@ -101,12 +101,12 @@ export function SearchFilter({ filters, onFiltersChange, className }: SearchFilt
       {/* Filter Controls */}
       <div className="flex flex-wrap gap-3">
         {/* Category Filter */}
-        <Select value={filters.category} onValueChange={handleCategoryChange}>
+        <Select value={filters.category || 'all'} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="业务大类" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全部分类</SelectItem>
+            <SelectItem value="all">全部分类</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.name} value={category.name}>
                 {category.name}
@@ -117,7 +117,7 @@ export function SearchFilter({ filters, onFiltersChange, className }: SearchFilt
 
         {/* Subcategory Filter */}
         <Select 
-          value={filters.subCategory} 
+          value={filters.subCategory || 'all'} 
           onValueChange={handleSubCategoryChange}
           disabled={!filters.category}
         >
@@ -125,7 +125,7 @@ export function SearchFilter({ filters, onFiltersChange, className }: SearchFilt
             <SelectValue placeholder="小方向" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全部方向</SelectItem>
+            <SelectItem value="all">全部方向</SelectItem>
             {subCategories.map((subCat) => (
               <SelectItem key={subCat} value={subCat}>
                 {subCat}

@@ -14,7 +14,7 @@ const Index = () => {
         {/* Silk Background */}
         <div className="absolute inset-0 z-0">
           <Silk
-            speed={3}
+            speed={5}
             scale={2}
             color="hsl(var(--primary) / 0.1)"
             noiseIntensity={0.8}

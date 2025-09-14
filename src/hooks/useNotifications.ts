@@ -89,10 +89,13 @@ export const useNotifications = (userId?: string) => {
     fetchNotifications();
   }, [userId]);
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return { 
     notifications, 
     loading, 
-    error, 
+    error,
+    unreadCount,
     markAsRead, 
     markAllAsRead, 
     deleteNotification,

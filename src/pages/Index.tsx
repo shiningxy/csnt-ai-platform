@@ -4,10 +4,12 @@ import { ArrowRight, Code, Zap, Layers, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Silk from "@/components/effects/Silk";
 import { useStats } from "@/hooks/useStats";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const Index = () => {
   const navigate = useNavigate();
   const { stats, loading } = useStats();
+  const { profile } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,14 +44,25 @@ const Index = () => {
                 浏览算法
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => navigate('/apply')}
-                className="text-lg px-8 py-6 hover-scale"
-              >
-                提交算法
-              </Button>
+              {profile ? (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => navigate('/apply')}
+                  className="text-lg px-8 py-6 hover-scale"
+                >
+                  提交算法
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => navigate('/auth')}
+                  className="text-lg px-8 py-6 hover-scale"
+                >
+                  登录/注册
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -35,8 +35,8 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
   const { profile, signOut } = useAuth();
+  const { notifications, unreadCount, markAllAsRead, markAsRead, deleteNotification } = useNotifications();
   
   // 使用profile作为当前用户信息
   const currentUser = profile ? {
@@ -87,16 +87,16 @@ export function Header() {
     }
   };
 
-  const handleNotificationAction = (action: string, notificationId?: string) => {
+  const handleNotificationAction = (action: string, notificationId?: number) => {
     switch (action) {
       case 'markAllRead':
         markAllAsRead();
         break;
       case 'markRead':
-        if (notificationId) markAsRead(notificationId);
+        if (notificationId !== undefined) markAsRead(notificationId);
         break;
       case 'delete':
-        if (notificationId) deleteNotification(notificationId);
+        if (notificationId !== undefined) deleteNotification(notificationId);
         break;
     }
   };

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { Upload, Camera, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/components/auth/auth-provider';
 
 interface AvatarUploadProps {
   currentAvatar: string;
@@ -34,7 +34,7 @@ export function AvatarUpload({ currentAvatar, userName, onAvatarChange }: Avatar
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { updateAvatar } = useUser();
+  const { updateProfile } = useAuth();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -73,9 +73,12 @@ export function AvatarUpload({ currentAvatar, userName, onAvatarChange }: Avatar
     setSelectedAvatar(avatar);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     onAvatarChange(selectedAvatar);
-    updateAvatar(selectedAvatar); // Sync with global user state
+    // 同步到认证系统
+    if (updateProfile) {
+      await updateProfile({ avatar: selectedAvatar });
+    }
     setIsOpen(false);
     toast({
       title: '头像更新成功',

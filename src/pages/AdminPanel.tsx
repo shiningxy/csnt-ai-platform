@@ -19,7 +19,7 @@ import { PasswordChangeDialog } from "@/components/security/password-change-dial
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useDrafts } from "@/hooks/useDrafts";
-import { useUser } from "@/hooks/useUser";
+import { useAuth } from "@/components/auth/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 
 const users = [
@@ -61,12 +61,17 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Mock current user ID - in real app, this would come from auth context
-  const currentUserId = "mock-user-id";
+  const { profile, updateProfile } = useAuth();
+  const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications(profile?.user_id);
+  const { drafts, deleteDraft } = useDrafts(profile?.user_id);
   
-  const { notifications, markAllAsRead, markAsRead, deleteNotification } = useNotifications(currentUserId);
-  const { drafts, deleteDraft } = useDrafts(currentUserId);
-  const { user: currentUser, updateUser } = useUser();
+  // 当前用户信息
+  const currentUser = profile ? {
+    name: profile.name,
+    email: profile.email,
+    avatar: profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
+    role: profile.role
+  } : null;
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -129,10 +134,11 @@ export default function AdminPanel() {
     navigate(`/apply?draftId=${draftId}`);
   };
 
-  // 处理头像更换 - 已经在AvatarUpload组件中处理了全局状态同步
-  const handleAvatarChange = (newAvatar: string) => {
-    // AvatarUpload组件已经调用了updateAvatar来同步全局状态
-    // 这里不需要额外操作，因为currentUser已经是全局状态的引用
+  // 处理头像更换
+  const handleAvatarChange = async (newAvatar: string) => {
+    if (profile && updateProfile) {
+      await updateProfile({ avatar: newAvatar });
+    }
   };
 
   // 处理个人信息保存
@@ -275,8 +281,28 @@ export default function AdminPanel() {
     }
   };
 
+  // 如果用户未登录，显示登录提示
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold mb-2">请先登录</h1>
+          <p className="text-muted-foreground mb-4">您需要登录才能访问管理面板</p>
+          <Button onClick={() => navigate('/auth')}>
+            前往登录
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="container mx-auto py-8 px-4 max-w-6xl pt-20"
+      style={{ 
+        minHeight: 'calc(100vh - 64px)',
+        backgroundImage: 'linear-gradient(135deg, hsl(var(--primary) / 0.03) 0%, hsl(var(--accent) / 0.05) 100%)',
+      }}
+    >
       <div className="container mx-auto pt-20 px-6 pb-6">
         <div className="mb-8">
           <h1 className="text-heading mb-2">管理面板</h1>
@@ -415,22 +441,30 @@ export default function AdminPanel() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <AvatarUpload
-                    currentAvatar={currentUser.avatar}
-                    userName={currentUser.name}
+                    currentAvatar={currentUser?.avatar || ''}
+                    userName={currentUser?.name || ''}
                     onAvatarChange={handleAvatarChange}
                   />
                   <div>
-                    <h3 className="font-medium">{currentUser.name}</h3>
-                    <p className="text-sm text-muted-foreground">{currentUser.email}</p>
-                    <Badge variant="secondary" className="mt-1">{currentUser.role}</Badge>
+                    <h3 className="font-medium">{currentUser?.name}</h3>
+                    <p className="text-sm text-muted-foreground">{currentUser?.email}</p>
+                    <Badge variant="secondary" className="mt-1">{currentUser?.role}</Badge>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">用户名</Label>
-                    <Input id="username" value={currentUser.name} onChange={(e) => updateUser({ name: e.target.value })} />
+                    <Input 
+                      id="username" 
+                      value={currentUser?.name || ''} 
+                      onChange={(e) => updateProfile && updateProfile({ name: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">邮箱</Label>
-                    <Input id="email" value={currentUser.email} onChange={(e) => updateUser({ email: e.target.value })} />
+                    <Input 
+                      id="email" 
+                      value={currentUser?.email || ''} 
+                      onChange={(e) => updateProfile && updateProfile({ email: e.target.value })}
+                    />
                   </div>
                   <Button onClick={handleProfileSave}>保存更改</Button>
                 </CardContent>

@@ -15,9 +15,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { DraftStorage } from "@/lib/storage";
 import { format } from "date-fns";
+import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { PasswordChangeDialog } from "@/components/security/password-change-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data
-const notifications = [
+const initialNotifications = [
   { id: 1, type: "system", title: "系统维护通知", message: "系统将于今晚22:00-24:00进行维护", time: "10分钟前", read: false },
   { id: 2, type: "algorithm", title: "新算法待审核", message: "用户张三提交了新的排序算法", time: "1小时前", read: false },
   { id: 3, type: "user", title: "用户注册", message: "新用户李四已注册", time: "2小时前", read: true },
@@ -40,9 +43,18 @@ const roles = [
 export default function AdminPanel() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("notifications");
   const [searchTerm, setSearchTerm] = useState("");
   const [drafts, setDrafts] = useState(() => DraftStorage.getAllDrafts());
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [currentUser, setCurrentUser] = useState({
+    name: "系统管理员",
+    email: "admin@example.com",
+    phone: "+86 138****8888",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+    role: "超级管理员"
+  });
 
   // 处理URL参数来切换tab
   useEffect(() => {
@@ -71,6 +83,45 @@ export default function AdminPanel() {
   const handleEditDraft = (draftId: string) => {
     navigate(`/apply?draftId=${draftId}`);
   };
+
+  // 处理头像更换
+  const handleAvatarChange = (newAvatar: string) => {
+    setCurrentUser(prev => ({ ...prev, avatar: newAvatar }));
+    // 这里可以调用API保存到服务器
+  };
+
+  // 处理个人信息保存
+  const handleProfileSave = () => {
+    toast({
+      title: "保存成功",
+      description: "个人信息已更新",
+    });
+  };
+
+  // 通知管理函数
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    toast({
+      title: "操作成功",
+      description: "所有通知已标记为已读",
+    });
+  };
+
+  const handleMarkAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    ));
+  };
+
+  const handleDeleteNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    toast({
+      title: "删除成功",
+      description: "通知已删除",
+    });
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,8 +164,24 @@ export default function AdminPanel() {
           {/* 消息通知 */}
           <TabsContent value="notifications" className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">消息通知</h2>
               <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">消息通知</h2>
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {unreadCount} 条未读
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                  >
+                    全部已读
+                  </Button>
+                )}
                 <Input 
                   placeholder="搜索通知..." 
                   value={searchTerm}
@@ -128,8 +195,14 @@ export default function AdminPanel() {
             </div>
 
             <div className="grid gap-4">
-              {notifications.map((notification) => (
-                <Card key={notification.id} className={`transition-all ${!notification.read ? 'border-primary/50 bg-primary-light/30' : ''}`}>
+              {notifications
+                .filter(notification => 
+                  !searchTerm || 
+                  notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  notification.message.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((notification) => (
+                <Card key={notification.id} className={`transition-all group ${!notification.read ? 'border-primary/50 bg-primary-light/30' : ''}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -142,19 +215,37 @@ export default function AdminPanel() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem>标记为已读</DropdownMenuItem>
-                          <DropdownMenuItem>删除</DropdownMenuItem>
+                          {!notification.read && (
+                            <DropdownMenuItem onClick={() => handleMarkAsRead(notification.id)}>
+                              标记为已读
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteNotification(notification.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            删除
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              {notifications.length === 0 && (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">暂无通知</h3>
+                    <p className="text-muted-foreground">您的通知将显示在这里</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
@@ -167,30 +258,29 @@ export default function AdminPanel() {
                   <CardDescription>管理您的个人资料</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback>管理</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">系统管理员</h3>
-                      <p className="text-sm text-muted-foreground">admin@example.com</p>
-                      <Badge variant="secondary" className="mt-1">超级管理员</Badge>
-                    </div>
+                  <AvatarUpload
+                    currentAvatar={currentUser.avatar}
+                    userName={currentUser.name}
+                    onAvatarChange={handleAvatarChange}
+                  />
+                  <div>
+                    <h3 className="font-medium">{currentUser.name}</h3>
+                    <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+                    <Badge variant="secondary" className="mt-1">{currentUser.role}</Badge>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="username">用户名</Label>
-                    <Input id="username" defaultValue="admin" readOnly />
+                    <Input id="username" value={currentUser.name} onChange={(e) => setCurrentUser(prev => ({ ...prev, name: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">邮箱</Label>
-                    <Input id="email" defaultValue="admin@example.com" />
+                    <Input id="email" value={currentUser.email} onChange={(e) => setCurrentUser(prev => ({ ...prev, email: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">手机号</Label>
-                    <Input id="phone" defaultValue="+86 138****8888" />
+                    <Input id="phone" value={currentUser.phone} onChange={(e) => setCurrentUser(prev => ({ ...prev, phone: e.target.value }))} />
                   </div>
-                  <Button>保存更改</Button>
+                  <Button onClick={handleProfileSave}>保存更改</Button>
                 </CardContent>
               </Card>
 
@@ -214,7 +304,9 @@ export default function AdminPanel() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  <Button variant="outline" className="w-full">修改密码</Button>
+                  <PasswordChangeDialog>
+                    <Button variant="outline" className="w-full">修改密码</Button>
+                  </PasswordChangeDialog>
                   <Button variant="outline" className="w-full">查看登录记录</Button>
                 </CardContent>
               </Card>

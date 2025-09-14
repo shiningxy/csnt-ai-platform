@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/popover';
 import { Brain, Bell, Settings, LogOut, User, FileText, Shield, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { NotificationManager, type Notification } from '@/components/notifications/notification-manager';
 
 // Mock current user - in real app this would come from auth context
 const currentUser = {
@@ -35,7 +37,7 @@ const navigationItems = [
 ];
 
 // Mock notifications data
-const mockNotifications = [
+const initialNotifications: Notification[] = [
   { id: 1, type: 'system', title: '系统维护通知', message: '系统将于今晚22:00-24:00进行维护', time: '10分钟前', read: false },
   { id: 2, type: 'algorithm', title: '新算法待审核', message: '用户张三提交了新的排序算法', time: '1小时前', read: false },
   { id: 3, type: 'user', title: '用户注册', message: '新用户李四已注册', time: '2小时前', read: true },
@@ -45,7 +47,7 @@ const mockNotifications = [
 export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [notifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   // Filter navigation items based on user role
@@ -54,6 +56,21 @@ export function Header() {
   );
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // 通知管理函数
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleMarkAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    ));
+  };
+
+  const handleDeleteNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const handleUserMenuClick = (action: string) => {
     console.log('点击菜单项:', action); // 添加调试信息
@@ -118,6 +135,9 @@ export function Header() {
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Notifications */}
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
@@ -130,50 +150,14 @@ export function Header() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end" sideOffset={10}>
-                <div className="flex items-center justify-between p-4 border-b">
-                  <h3 className="font-semibold">通知</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setNotificationOpen(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                      暂无通知
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div key={notification.id} className="border-b last:border-b-0">
-                        <div className="p-3 hover:bg-accent transition-colors">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 ${!notification.read ? 'bg-primary' : 'bg-muted'}`} />
-                            <div className="flex-1 space-y-1">
-                              <p className="text-sm font-medium">{notification.title}</p>
-                              <p className="text-xs text-muted-foreground">{notification.message}</p>
-                              <p className="text-xs text-muted-foreground">{notification.time}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                {notifications.length > 0 && (
-                  <div className="p-3 border-t">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full text-xs"
-                      onClick={() => navigate('/admin?tab=notifications')}
-                    >
-                      查看全部通知
-                    </Button>
-                  </div>
-                )}
+              <PopoverContent className="p-0" align="end" sideOffset={10}>
+                <NotificationManager
+                  notifications={notifications}
+                  onMarkAllAsRead={handleMarkAllAsRead}
+                  onMarkAsRead={handleMarkAsRead}
+                  onDelete={handleDeleteNotification}
+                  onClose={() => setNotificationOpen(false)}
+                />
               </PopoverContent>
             </Popover>
 

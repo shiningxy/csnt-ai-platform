@@ -16,6 +16,7 @@ import { AlgorithmAsset, FilterOptions } from '@/types/algorithm';
 import { mockAlgorithms } from '@/data/mockData';
 import { DraftStorage, ApplicationStorage } from '@/lib/storage';
 import Silk from '@/components/effects/Silk';
+import DecryptedText from '@/components/ui/decrypted-text';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -187,10 +188,26 @@ export default function AlgorithmList() {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              AI算法资产中心
+              <DecryptedText 
+                text="AI算法资产中心"
+                animateOn="view"
+                speed={80}
+                maxIterations={15}
+                revealDirection="center"
+                className="text-white"
+                encryptedClassName="text-white/70"
+              />
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
-              集中管理、标准化展示、场景化引导的智能算法赋能平台
+              <DecryptedText 
+                text="集中管理、标准化展示、场景化引导的智能算法赋能平台"
+                animateOn="view"
+                speed={60}
+                maxIterations={12}
+                revealDirection="start"
+                className="text-white/90"
+                encryptedClassName="text-white/50"
+              />
             </p>
             
             {/* Quick Stats */}

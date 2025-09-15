@@ -90,8 +90,8 @@ export default function AdminPanel() {
     console.log('URL tab参数:', tab); // 添加调试信息
     
     if (tab && ['notifications', 'profile', 'drafts', 'permissions', 'api-keys', 'settings'].includes(tab)) {
-      // 检查权限：如果不是admin用户试图访问受限标签，则重定向到profile
-      if (!currentUser || currentUser.role !== 'admin') {
+      // 只检查admin才能访问的标签，其他标签都允许访问
+      if (currentUser && currentUser.role !== 'admin') {
         if (tab === 'permissions' || tab === 'api-keys') {
           setActiveTab('profile');
           const url = new URL(window.location.href);
@@ -322,8 +322,8 @@ export default function AdminPanel() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => {
-          // 检查权限：如果不是admin用户试图访问受限标签，则重定向到profile
-          if (!currentUser || currentUser.role !== 'admin') {
+          // 只检查admin才能访问的标签，其他标签都允许访问
+          if (currentUser && currentUser.role !== 'admin') {
             if (value === 'permissions' || value === 'api-keys') {
               setActiveTab('profile');
               const url = new URL(window.location.href);

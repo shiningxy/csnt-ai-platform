@@ -101,7 +101,7 @@ export default function AdminPanel() {
       setActiveTab(tab);
       console.log('设置activeTab为:', tab); // 添加调试信息
     } else {
-      // 没有tab参数时，默认跳转到个人中心并同步URL
+      // 没有tab参数时，默认显示个人中心并同步URL
       setActiveTab('profile');
       navigate(`/admin?tab=profile`, { replace: true });
     }
@@ -323,9 +323,12 @@ export default function AdminPanel() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => {
+          console.log('用户点击tab:', value, '当前activeTab:', activeTab);
+          
           // 只检查admin才能访问的标签，其他标签都允许访问
           if (currentUser && currentUser.role !== 'admin') {
             if (value === 'permissions' || value === 'api-keys') {
+              console.log('非admin用户试图访问受限标签，重定向到profile');
               setActiveTab('profile');
               navigate(`/admin?tab=profile`, { replace: false });
               return;
@@ -335,6 +338,7 @@ export default function AdminPanel() {
           setActiveTab(value);
           // 更新URL参数（使用React Router而非window.history）
           navigate(`/admin?tab=${value}`, { replace: false });
+          console.log('切换到tab:', value);
         }} className="space-y-6">
           <TabsList className={`grid w-full ${currentUser?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-4'}`}>
             <TabsTrigger value="notifications" className="flex items-center gap-2">

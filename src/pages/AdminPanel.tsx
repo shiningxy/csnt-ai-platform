@@ -94,17 +94,18 @@ export default function AdminPanel() {
       if (currentUser && currentUser.role !== 'admin') {
         if (tab === 'permissions' || tab === 'api-keys') {
           setActiveTab('profile');
-          const url = new URL(window.location.href);
-          url.searchParams.set('tab', 'profile');
-          window.history.replaceState({}, '', url.toString());
+          navigate(`/admin?tab=profile`, { replace: true });
           return;
         }
       }
-      
       setActiveTab(tab);
       console.log('设置activeTab为:', tab); // 添加调试信息
+    } else {
+      // 没有tab参数时，默认跳转到个人中心并同步URL
+      setActiveTab('profile');
+      navigate(`/admin?tab=profile`, { replace: true });
     }
-  }, [location.search, currentUser]);
+  }, [location.search, currentUser, navigate]);
 
   // Load API keys
   useEffect(() => {
@@ -326,18 +327,14 @@ export default function AdminPanel() {
           if (currentUser && currentUser.role !== 'admin') {
             if (value === 'permissions' || value === 'api-keys') {
               setActiveTab('profile');
-              const url = new URL(window.location.href);
-              url.searchParams.set('tab', 'profile');
-              window.history.pushState({}, '', url.toString());
+              navigate(`/admin?tab=profile`, { replace: false });
               return;
             }
           }
           
           setActiveTab(value);
-          // 更新URL参数
-          const url = new URL(window.location.href);
-          url.searchParams.set('tab', value);
-          window.history.pushState({}, '', url.toString());
+          // 更新URL参数（使用React Router而非window.history）
+          navigate(`/admin?tab=${value}`, { replace: false });
         }} className="space-y-6">
           <TabsList className={`grid w-full ${currentUser?.role === 'admin' ? 'grid-cols-6' : 'grid-cols-4'}`}>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
